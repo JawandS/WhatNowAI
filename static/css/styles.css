@@ -1,0 +1,15 @@
+#chat-box div {
+  margin-bottom: 0.5rem;
+}
+
+#chat-box .user {
+  background-color: #0d6efd;
+  color: white;
+  align-self: flex-end;
+}
+
+#chat-box .bot {
+  background-color: #f1f1f1;
+  color: #333;
+  align-self: flex-start;
+}
