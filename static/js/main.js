@@ -74,6 +74,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Step 1 -> Step 2 transition
+	window.addEventListener('keypress', (event) => {
+		if((event.code == "Space" || event.code == "Enter") && !step1.classList.contains('slide-left')) {
+			step1.classList.add('slide-left');
+			setTimeout(() => {
+				step1.classList.add('d-none');
+				step2.classList.remove('d-none');
+				step2.classList.add('fade-in');
+				nameInput.focus();
+				
+				// Play step name instructions
+				setTimeout(() => {
+					playIntroductionTTS('step_name');
+				}, 500);
+			}, 800);
+		}
+	});
+	
     nextBtn1.addEventListener('click', function() {
         step1.classList.add('slide-left');
         setTimeout(() => {
@@ -413,3 +430,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
 });
+
