@@ -1,17 +1,17 @@
-/* Base typography & colors */
+/* Base Styles */
 body {
   font-family: "Inter", sans-serif;
-  background-color: #F8FAFC;    /* light neutral background */
-  color: #1F2937;               /* dark gray text */
-  overflow-x: hidden;           /* Prevent horizontal scroll during animations */
+  background-color: #F8FAFC;
+  color: #1F2937;
+  overflow-x: hidden;
 }
 
 h1 {
   font-weight: 600;
-  color: #4F46E5;               /* indigo primary */
+  color: #4F46E5;
 }
 
-/* Onboarding animations */
+/* Onboarding Animations */
 .onboarding-step {
   transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
@@ -19,11 +19,6 @@ h1 {
 
 .onboarding-step.slide-left {
   transform: translateX(-100vw);
-  opacity: 0;
-}
-
-.onboarding-step.slide-right {
-  transform: translateX(100vw);
   opacity: 0;
 }
 
@@ -46,7 +41,7 @@ h1 {
   }
 }
 
-/* Special input styling for onboarding */
+/* Onboarding Input Styling */
 .input-container .form-control {
   font-size: 1.5rem;
   padding: 1rem;
@@ -65,15 +60,19 @@ h1 {
   min-height: 120px;
 }
 
-/* Utility classes */
-.text-indigo {
-  color: #4F46E5 !important;
+/* Form Validation */
+.form-control.is-invalid {
+  border-color: #dc3545 !important;
+  animation: shake 0.5s ease-in-out;
 }
 
-.bg-indigo {
-  background-color: #4F46E5 !important;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
+/* Button Styles */
 .btn-indigo {
   background-color: #4F46E5;
   border-color: #4F46E5;
@@ -104,39 +103,19 @@ h1 {
   color: white;
 }
 
-/* Form styling */
-.card {
-  border: none;
-  border-radius: 1rem;
+/* Utility Classes */
+.text-indigo {
+  color: #4F46E5 !important;
 }
 
-.form-control:focus {
-  border-color: #4F46E5;
-  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+.bg-indigo {
+  background-color: #4F46E5 !important;
 }
 
-.form-label {
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-/* Form validation styling */
-.form-control.is-invalid {
-  border-color: #dc3545 !important;
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-/* Chat container */
+/* Chat Interface */
 #chat-box {
   background-color: #ffffff;
-  border: 1px solid #E5E7EB;    /* light gray border */
+  border: 1px solid #E5E7EB;
   border-radius: 0.75rem;
   padding: 1rem;
   height: 400px;
@@ -147,32 +126,28 @@ h1 {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* Individual message bubbles */
 #chat-box .message {
   max-width: 75%;
   padding: 0.75rem 1rem;
   border-radius: 1rem;
   line-height: 1.4;
-  position: relative;
 }
 
-/* User messages */
 #chat-box .user {
-  background-color: #4F46E5;   /* indigo */
+  background-color: #4F46E5;
   color: #FFFFFF;
   align-self: flex-end;
   border-bottom-right-radius: 0.25rem;
 }
 
-/* Bot messages */
 #chat-box .bot {
-  background-color: #E0F2F1;   /* light teal */
-  color: #0F172A;              /* charcoal */
+  background-color: #E0F2F1;
+  color: #0F172A;
   align-self: flex-start;
   border-bottom-left-radius: 0.25rem;
 }
 
-/* Input area */
+/* Chat Input */
 .input-group {
   margin-top: 1rem;
 }
@@ -180,12 +155,11 @@ h1 {
 #user-input {
   border-radius: 0.5rem 0 0 0.5rem;
   border-color: #E5E7EB;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 #send-btn {
   border-radius: 0 0.5rem 0.5rem 0;
-  background-color: #14B8A6;   /* teal accent */
+  background-color: #14B8A6;
   border-color: #14B8A6;
   font-weight: 500;
 }
@@ -195,44 +169,13 @@ h1 {
   border-color: #0D9488;
 }
 
-/* Scrollbar styling for chat-box */
-#chat-box::-webkit-scrollbar {
-  width: 8px;
-}
-#chat-box::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 4px;
-}
-#chat-box::-webkit-scrollbar-thumb {
-  background-color: #CBD5E1;
-  border-radius: 4px;
-  border: 2px solid #F1F5F9;
-}
-
-/* Persistent inline highlighting as a bubble */
-mark,
-.highlight {
-  background-color: #14B8A6;      /* teal accent */
-  color: #ffffff;                 /* white text */
-  padding: 0.2em 0.5em;           /* space inside the bubble */
-  border-radius: 0.5rem;          /* fully rounded ends */
-  font-weight: 500;               /* a bit bolder */
-  text-decoration: none;          /* remove the default underline */
-}
-
-/* Optional: tweak the normal text-selection look too */
-::selection {
-  background-color: rgba(79, 70, 229, 0.2); /* semi-transparent indigo */
-  color: #4F46E5;                           /* indigo text */
-}
-
-/* Large display text */
+/* Typography */
 .display-3 {
   font-weight: 600;
   letter-spacing: -0.025em;
 }
 
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: 768px) {
   .display-3 {
     font-size: 2.5rem;
