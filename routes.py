@@ -6,7 +6,7 @@ import logging
 import time
 from typing import Dict, Any
 
-from services.tts_service import TTSService, INTRODUCTION_TEXTS
+from services.tts_service import TTSService, get_introduction_text, INTRODUCTION_TEXTS
 from services.geocoding_service import GeocodingService
 from utils.helpers import validate_coordinates, generate_response_text
 from config.settings import AUDIO_DIR, DEFAULT_TTS_VOICE
@@ -31,13 +31,23 @@ def home():
 def generate_introduction_tts(step: str):
     """Generate TTS for introduction steps"""
     try:
-        if step not in INTRODUCTION_TEXTS:
+        # Get any location data from request for context
+        data = request.get_json() if request.is_json else {}
+        location_data = data.get('location')
+        
+        # Generate dynamic text based on time and location
+        text = get_introduction_text(step, location_data)
+        
+        # Fallback to static text if dynamic generation fails
+        if not text:
+            text = INTRODUCTION_TEXTS.get(step)
+            
+        if not text:
             return jsonify({
                 'success': False,
                 'message': 'Invalid introduction step'
             }), 400
         
-        text = INTRODUCTION_TEXTS[step]
         audio_id, audio_path = tts_service.generate_audio_sync(text)
         
         if audio_id:

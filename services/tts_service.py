@@ -5,8 +5,9 @@ import asyncio
 import edge_tts
 import os
 import uuid
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -116,11 +117,63 @@ class TTSService:
             logger.error(f"Error during audio cleanup: {e}")
 
 
-# Pre-defined introduction texts for TTS
+def get_time_based_greeting() -> str:
+    """Get time-appropriate greeting"""
+    hour = datetime.now().hour
+    
+    if 5 <= hour < 12:
+        return "Good morning"
+    elif 12 <= hour < 17:
+        return "Good afternoon"
+    elif 17 <= hour < 22:
+        return "Good evening"
+    else:
+        return "Hello"
+
+
+def get_introduction_text(step: str, location_data: Optional[Dict] = None) -> str:
+    """
+    Generate dynamic introduction text based on time, location, and step
+    
+    Args:
+        step: The onboarding step
+        location_data: Optional location information
+        
+    Returns:
+        Personalized introduction text
+    """
+    greeting = get_time_based_greeting()
+    
+    # Extract location info if available
+    location_context = ""
+    if location_data:
+        city = location_data.get('city', '')
+        country = location_data.get('country', '')
+        if city and country:
+            location_context = f" from {city}, {country}"
+        elif country:
+            location_context = f" from {country}"
+    
+    texts = {
+        "welcome": f"{greeting}! Welcome to What Now AI. Let's get started!",
+        
+        "step_name": f"First, I'd love to know your name! You can also share your social media handles.",
+        
+        "step_activity": f"Perfect! Now tell me, what would you like to do today?",
+        
+        "step_location": f"Great choice! To give you the best local recommendations, I'll need to know where you are.",
+        
+        "processing": f"Excellent! Now I'm creating your personalized plan - this will just take a moment."
+    }
+    
+    return texts.get(step, "Let's continue!")
+
+
+# Backward compatibility - keep static texts as fallback
 INTRODUCTION_TEXTS = {
-    "welcome": "Welcome to What Now AI! I'm here to help you figure out your next steps. Let's get started by learning a bit about you.",
-    "step_name": "First, please tell me your name and any social media handles you'd like to share. This helps me understand you better.",
-    "step_activity": "Great! Now tell me what you want to do or accomplish. Be as specific or general as you'd like.",
-    "step_location": "Perfect! Finally, let's get your location so I can provide location-specific recommendations. You can share your location automatically or skip this step.",
-    "processing": "Excellent! I'm now analyzing your information and gathering relevant insights. This will just take a moment."
+    "welcome": "Good day! Welcome to What Now AI. Let's discover your next adventure!",
+    "step_name": "First, what's your name? You can also share social media handles for better recommendations.",
+    "step_activity": "Perfect! Now tell me, what would you like to do today?",
+    "step_location": "Great! To give you local recommendations, I'll need your location. You can share it or skip this step.",
+    "processing": "Excellent! I'm creating your personalized action plan. Just a moment please."
 }

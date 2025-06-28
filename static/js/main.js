@@ -30,15 +30,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let userName = '';
     let userSocial = {};
     let userLocation = null;
+    let welcomePlayed = false;
 
     // TTS functionality
-    async function playIntroductionTTS(step) {
+    async function playIntroductionTTS(step, locationData = null) {
         try {
+            const requestBody = locationData ? { location: locationData } : {};
+            
             const response = await fetch(`/tts/introduction/${step}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },
+                body: JSON.stringify(requestBody)
             });
             
             const data = await response.json();
@@ -49,13 +53,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Auto-play with user interaction fallback
                 try {
                     await audio.play();
+                    console.log(`Playing TTS for step: ${step}`);
                 } catch (e) {
                     console.log('Auto-play blocked, user interaction required');
                     // Could show a play button here if needed
                 }
+            } else {
+                console.error('Failed to get TTS audio:', data.message);
             }
         } catch (error) {
             console.error('Error playing introduction TTS:', error);
+        }
+    }
+
+    // Function to play welcome message (after user interaction)
+    function playWelcomeIfNeeded() {
+        if (!welcomePlayed) {
+            welcomePlayed = true;
+            playIntroductionTTS('welcome');
         }
     }
 
@@ -64,8 +79,13 @@ document.addEventListener('DOMContentLoaded', function() {
         playIntroductionTTS('welcome');
     }, 1000);
 
+    // Also try to play welcome on first user interaction (fallback)
+    document.body.addEventListener('click', playWelcomeIfNeeded, { once: true });
+    document.body.addEventListener('keydown', playWelcomeIfNeeded, { once: true });
+
     // Step 1 -> Step 2 transition
     nextBtn1.addEventListener('click', function() {
+        playWelcomeIfNeeded(); // Ensure welcome is played if autoplay was blocked
         step1.classList.add('slide-left');
         setTimeout(() => {
             step1.classList.add('d-none');
@@ -293,9 +313,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadingSection.classList.remove('d-none');
                     loadingMessage.textContent = submitData.message;
                     
-                    // Play processing instructions
+                    // Play processing instructions with location context
                     setTimeout(() => {
-                        playIntroductionTTS('processing');
+                        playIntroductionTTS('processing', userLocation);
                     }, 500);
                 }, 800);
 
