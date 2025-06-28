@@ -31,6 +31,39 @@ document.addEventListener('DOMContentLoaded', function() {
     let userSocial = {};
     let userLocation = null;
 
+    // TTS functionality
+    async function playIntroductionTTS(step) {
+        try {
+            const response = await fetch(`/tts/introduction/${step}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.audio_id) {
+                const audio = new Audio(`/audio/${data.audio_id}`);
+                
+                // Auto-play with user interaction fallback
+                try {
+                    await audio.play();
+                } catch (e) {
+                    console.log('Auto-play blocked, user interaction required');
+                    // Could show a play button here if needed
+                }
+            }
+        } catch (error) {
+            console.error('Error playing introduction TTS:', error);
+        }
+    }
+
+    // Play welcome message on page load
+    setTimeout(() => {
+        playIntroductionTTS('welcome');
+    }, 1000);
+
     // Step 1 -> Step 2 transition
     nextBtn1.addEventListener('click', function() {
         step1.classList.add('slide-left');
@@ -39,6 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
             step2.classList.remove('d-none');
             step2.classList.add('fade-in');
             nameInput.focus();
+            
+            // Play step name instructions
+            setTimeout(() => {
+                playIntroductionTTS('step_name');
+            }, 500);
         }, 800);
     });
 
@@ -66,6 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
             step3.classList.remove('d-none');
             step3.classList.add('fade-in');
             activityInput.focus();
+            
+            // Play step activity instructions
+            setTimeout(() => {
+                playIntroductionTTS('step_activity');
+            }, 500);
         }, 800);
     }
 
@@ -91,6 +134,11 @@ document.addEventListener('DOMContentLoaded', function() {
             step3.classList.add('d-none');
             step4.classList.remove('d-none');
             step4.classList.add('fade-in');
+            
+            // Play step location instructions
+            setTimeout(() => {
+                playIntroductionTTS('step_location');
+            }, 500);
         }, 800);
     }
 
@@ -244,6 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     step4.classList.add('d-none');
                     loadingSection.classList.remove('d-none');
                     loadingMessage.textContent = submitData.message;
+                    
+                    // Play processing instructions
+                    setTimeout(() => {
+                        playIntroductionTTS('processing');
+                    }, 500);
                 }, 800);
 
                 // Start background processing

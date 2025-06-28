@@ -1,219 +1,58 @@
-from flask import Flask, render_template, request, jsonify, abort
+"""
+WhatNowAI Flask Application
 
-app = Flask(__name__)
+A multi-step onboarding application that helps users determine their next steps
+based on their location, interests, and social media presence.
+"""
+import logging.config
+from flask import Flask
 
-@app.route('/')
-def home():
-    """Render the homepage with the form"""
-    return render_template('home.html')
+from routes import main_bp
+from config.settings import FLASK_CONFIG, LOGGING_CONFIG, AUDIO_DIR
+from services.tts_service import TTSService
 
-@app.route('/submit', methods=['POST'])
-def submit_info():
-    """Handle form submission with user's name and activity"""
-    try:
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        activity = data.get('activity', '').strip()
-        social = data.get('social', {})
-        
-        if not name or not activity:
-            return jsonify({
-                'success': False,
-                'message': 'Please provide both your name and what you want to do.'
-            }), 400
-        
-        # Process the user input - start background processing
-        response_message = f"Hello {name}! I'm processing your request to {activity}. Please wait while I work on this..."
-        
-        return jsonify({
-            'success': True,
-            'message': response_message,
-            'name': name,
-            'activity': activity,
-            'social': social,
-            'processing': True
-        })
+# Configure logging
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
+
+
+def create_app() -> Flask:
+    """
+    Application factory function
     
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while processing your request.'
-        }), 500
-
-@app.route('/chat', methods=['POST'])
-def chat():
-    """Handle chat messages"""
-    try:
-        data = request.get_json()
-        message = data.get('message', '').strip()
-        
-        if not message:
-            return jsonify({
-                'success': False,
-                'message': 'Please provide a message.'
-            }), 400
-        
-        # Simple response logic (you can enhance this with AI)
-        response = f"I received your message: '{message}'. How can I help you further?"
-        
-        return jsonify({
-            'success': True,
-            'response': response
-        })
+    Returns:
+        Configured Flask application instance
+    """
+    app = Flask(__name__)
     
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while processing your message.'
-        }), 500
-
-@app.route('/process', methods=['POST'])
-def process_request():
-    """Handle background processing of user request"""
-    try:
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        activity = data.get('activity', '').strip()
-        location_data = data.get('location', {})
-        social_data = data.get('social', {})
-        
-        if not name or not activity:
-            return jsonify({
-                'success': False,
-                'message': 'Missing name or activity information.'
-            }), 400
-        
-        # Extract location information
-        country = location_data.get('country', 'Unknown')
-        zipcode = location_data.get('zipcode', 'Unknown')
-        latitude = location_data.get('latitude')
-        longitude = location_data.get('longitude')
-        city = location_data.get('city', 'Unknown')
-        
-        # Extract social media information
-        twitter_handle = social_data.get('twitter', '').strip()
-        instagram_handle = social_data.get('instagram', '').strip()
-        
-        # TODO: Add your actual AI/processing logic here
-        # This is a placeholder for now - simulate processing time
-        import time
-        time.sleep(3)  # Simulate processing delay
-        
-        # Placeholder response - replace with actual AI logic
-        # Now includes location-aware suggestions with coordinates
-        location_str = f"{city}, {country}"
-        if zipcode != 'Unknown':
-            location_str += f" ({zipcode})"
-        
-        result = f"Great news, {name}! I've analyzed your request to {activity} in {location_str}.\n\n"
-        
-        # Add social media context if provided
-        if twitter_handle or instagram_handle:
-            result += f"I noticed you're active on social media"
-            if twitter_handle and instagram_handle:
-                result += f" (@{twitter_handle} on X, @{instagram_handle} on Instagram)"
-            elif twitter_handle:
-                result += f" (@{twitter_handle} on X)"
-            elif instagram_handle:
-                result += f" (@{instagram_handle} on Instagram)"
-            result += f". This gives me additional context about your interests!\n\n"
-        
-        result += f"Here are some location-specific suggestions:\n\n" \
-                f"1. Start by breaking down '{activity}' into smaller steps\n" \
-                f"2. Research local resources in {country} that can help with {activity}\n" \
-                f"3. Check for any location-specific requirements or regulations\n" \
-                f"4. Set a timeline for completion\n" \
-                f"5. Connect with local communities or groups in your area\n\n"
-        
-        if twitter_handle or instagram_handle:
-            result += f"6. Share your {activity} journey on social media to connect with like-minded people\n" \
-                     f"7. Follow relevant accounts and hashtags related to {activity}\n\n"
-        
-        if latitude and longitude:
-            result += f"Based on your precise location ({latitude:.4f}, {longitude:.4f}), I can provide even more targeted recommendations.\n\n"
-        
-        result += f"Would you like me to help you create a detailed plan specific to your location?"
-        
-        return jsonify({
-            'success': True,
-            'result': result,
-            'name': name,
-            'activity': activity,
-            'location': location_data,
-            'social': social_data
-        })
+    # Register blueprints
+    app.register_blueprint(main_bp)
     
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while processing your request.'
-        }), 500
-
-@app.route('/geocode', methods=['POST'])
-def reverse_geocode():
-    """Reverse geocode latitude/longitude to get address information"""
+    # Initialize services
+    tts_service = TTSService(str(AUDIO_DIR))
+    
+    # Cleanup old audio files on startup
     try:
-        data = request.get_json()
-        latitude = data.get('latitude')
-        longitude = data.get('longitude')
-        
-        if not latitude or not longitude:
-            return jsonify({
-                'success': False,
-                'message': 'Missing latitude or longitude.'
-            }), 400
-        
-        # Using Nominatim (OpenStreetMap) for free reverse geocoding
-        import requests
-        
-        url = f"https://nominatim.openstreetmap.org/reverse"
-        params = {
-            'format': 'json',
-            'lat': latitude,
-            'lon': longitude,
-            'zoom': 18,
-            'addressdetails': 1
-        }
-        
-        headers = {
-            'User-Agent': 'WhatNowAI/1.0'  # Required by Nominatim
-        }
-        
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            geo_data = response.json()
-            address = geo_data.get('address', {})
-            
-            # Extract relevant information
-            country = address.get('country', 'Unknown')
-            city = address.get('city') or address.get('town') or address.get('village') or address.get('hamlet', 'Unknown')
-            zipcode = address.get('postcode', 'Unknown')
-            
-            return jsonify({
-                'success': True,
-                'location': {
-                    'country': country,
-                    'city': city,
-                    'zipcode': zipcode,
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'full_address': geo_data.get('display_name', 'Unknown')
-                }
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to geocode location.'
-            }), 500
-            
+        tts_service.cleanup_old_audio()
+        logger.info("Audio cleanup completed")
     except Exception as e:
-        print(f"Geocoding error: {e}")  # For debugging
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while processing location.'
-        }), 500
+        logger.warning(f"Audio cleanup failed: {e}")
+    
+    logger.info("WhatNowAI application initialized successfully")
+    return app
+
+
+def main():
+    """Main entry point"""
+    app = create_app()
+    
+    logger.info(f"Starting WhatNowAI on {FLASK_CONFIG['HOST']}:{FLASK_CONFIG['PORT']}")
+    app.run(
+        debug=FLASK_CONFIG['DEBUG'],
+        host=FLASK_CONFIG['HOST'],
+        port=FLASK_CONFIG['PORT']
+    )
+
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
-
+    main()

@@ -1,0 +1,213 @@
+"""
+Flask application routes
+"""
+from flask import Blueprint, render_template, request, jsonify, abort, send_file
+import logging
+import time
+from typing import Dict, Any
+
+from services.tts_service import TTSService, INTRODUCTION_TEXTS
+from services.geocoding_service import GeocodingService
+from utils.helpers import validate_coordinates, generate_response_text
+from config.settings import AUDIO_DIR, DEFAULT_TTS_VOICE
+
+logger = logging.getLogger(__name__)
+
+# Create blueprint
+main_bp = Blueprint('main', __name__)
+
+# Initialize services
+tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
+geocoding_service = GeocodingService()
+
+
+@main_bp.route('/')
+def home():
+    """Render the homepage with the form"""
+    return render_template('home.html')
+
+
+@main_bp.route('/tts/introduction/<step>', methods=['POST'])
+def generate_introduction_tts(step: str):
+    """Generate TTS for introduction steps"""
+    try:
+        if step not in INTRODUCTION_TEXTS:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid introduction step'
+            }), 400
+        
+        text = INTRODUCTION_TEXTS[step]
+        audio_id, audio_path = tts_service.generate_audio_sync(text)
+        
+        if audio_id:
+            return jsonify({
+                'success': True,
+                'audio_id': audio_id,
+                'text': text
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to generate audio'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error generating introduction TTS: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while generating audio'
+        }), 500
+
+
+@main_bp.route('/submit', methods=['POST'])
+def submit_info():
+    """Handle form submission with user's name and activity"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        activity = data.get('activity', '').strip()
+        social = data.get('social', {})
+        
+        if not name or not activity:
+            return jsonify({
+                'success': False,
+                'message': 'Please provide both your name and what you want to do.'
+            }), 400
+        
+        # Process the user input - start background processing
+        response_message = f"Hello {name}! I'm processing your request to {activity}. Please wait while I work on this..."
+        
+        return jsonify({
+            'success': True,
+            'message': response_message,
+            'name': name,
+            'activity': activity,
+            'social': social,
+            'processing': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in submit_info: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing your request.'
+        }), 500
+
+
+@main_bp.route('/chat', methods=['POST'])
+def chat():
+    """Handle chat messages"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '').strip()
+        
+        if not message:
+            return jsonify({
+                'success': False,
+                'message': 'Please provide a message.'
+            }), 400
+        
+        # Simple response logic (you can enhance this with AI)
+        response = f"I received your message: '{message}'. How can I help you further?"
+        
+        return jsonify({
+            'success': True,
+            'response': response
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in chat: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing your message.'
+        }), 500
+
+
+@main_bp.route('/process', methods=['POST'])
+def process_request():
+    """Handle background processing of user request"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        activity = data.get('activity', '').strip()
+        location_data = data.get('location', {})
+        social_data = data.get('social', {})
+        
+        if not name or not activity:
+            return jsonify({
+                'success': False,
+                'message': 'Missing name or activity information.'
+            }), 400
+        
+        # Simulate processing time
+        time.sleep(3)
+        
+        # Generate response text
+        result = generate_response_text(name, activity, location_data, social_data)
+        
+        return jsonify({
+            'success': True,
+            'result': result,
+            'name': name,
+            'activity': activity,
+            'location': location_data,
+            'social': social_data
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in process_request: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing your request.'
+        }), 500
+
+
+@main_bp.route('/geocode', methods=['POST'])
+def reverse_geocode():
+    """Reverse geocode latitude/longitude to get address information"""
+    try:
+        data = request.get_json()
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        if not validate_coordinates(latitude, longitude):
+            return jsonify({
+                'success': False,
+                'message': 'Invalid latitude or longitude coordinates.'
+            }), 400
+        
+        location_info = geocoding_service.reverse_geocode(latitude, longitude)
+        
+        if location_info:
+            return jsonify({
+                'success': True,
+                'location': location_info
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to geocode location.'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in reverse_geocode: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing location.'
+        }), 500
+
+
+@main_bp.route('/audio/<audio_id>')
+def serve_audio(audio_id: str):
+    """Serve generated audio files"""
+    try:
+        if not tts_service.audio_exists(audio_id):
+            abort(404)
+        
+        audio_path = tts_service.get_audio_path(audio_id)
+        return send_file(audio_path, mimetype='audio/mpeg')
+        
+    except Exception as e:
+        logger.error(f"Audio serve error: {e}")
+        abort(500)
