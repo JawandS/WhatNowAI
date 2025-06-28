@@ -15,6 +15,7 @@ from services.tts_service import TTSService, get_introduction_text, INTRODUCTION
 from services.geocoding_service import GeocodingService
 from services.ticketmaster_service import TicketmasterService
 from services.mapping_service import MappingService
+from services.user_profiling_service import EnhancedUserProfilingService
 from utils.helpers import validate_coordinates, generate_response_text
 from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, 
                            TICKETMASTER_CONFIG, MAP_CONFIG)
@@ -30,6 +31,7 @@ tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
 geocoding_service = GeocodingService()
 ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CONFIG)
 mapping_service = MappingService(MAP_CONFIG)
+user_profiling_service = EnhancedUserProfilingService()
 
 
 @main_bp.route('/')
@@ -200,6 +202,28 @@ def process_request():
         # Generate response text with search context
         result = generate_response_text(name, activity, location_data, social_data, search_summaries)
         
+        # Create enhanced user profile using the new profiling service
+        enhanced_user_profile = None
+        try:
+            enhanced_user_profile = user_profiling_service.create_enhanced_profile(
+                name=name,
+                location=location_data,
+                activity=activity,
+                social_data=social_data,
+                search_results={
+                    'search_results': search_results,
+                    'search_summaries': search_summaries
+                }
+            )
+            logger.info(f"Enhanced user profile created with {enhanced_user_profile.profile_completion:.1f}% completion")
+            
+            # Get recommendation context for events
+            recommendation_context = user_profiling_service.get_recommendation_context(enhanced_user_profile)
+            
+        except Exception as profile_error:
+            logger.warning(f"Enhanced user profiling failed: {profile_error}")
+            recommendation_context = {}
+        
         # Prepare personalization data for later use
         personalization_data = {
             'search_results': search_results,
@@ -209,7 +233,9 @@ def process_request():
                 'activity': activity,
                 'location': location_data,
                 'social': social_data
-            }
+            },
+            'enhanced_profile': recommendation_context,  # Include enhanced profile context
+            'activity': activity  # Ensure activity is available at top level
         }
         
         return jsonify({
@@ -221,6 +247,7 @@ def process_request():
             'social': social_data,
             'search_summaries': search_summaries,
             'personalization_data': personalization_data,  # Include personalization data
+            'enhanced_profile_completion': enhanced_user_profile.profile_completion if enhanced_user_profile else 0,
             'total_search_results': len(search_results) if search_results else 0,
             'redirect_to_map': True,  # Signal frontend to redirect to map
             'map_url': '/map'
@@ -307,6 +334,40 @@ def get_map_events():
         user_activity = data.get('activity', '')
         personalization_data = data.get('personalization_data', {})  # Enhanced personalization data
         
+        # Debug logging for incoming request
+        logger.info(f"=== DEBUG: Incoming request data ===")
+        logger.info(f"Location data: {location_data}")
+        logger.info(f"User interests: {user_interests}")
+        logger.info(f"User activity: '{user_activity}'")
+        logger.info(f"Personalization data keys: {list(personalization_data.keys()) if personalization_data else 'None'}")
+        logger.info(f"Full request data keys: {list(data.keys())}")
+        
+        # If no personalization data, try to construct basic context from available data
+        if not personalization_data:
+            logger.warning("No personalization_data in request, attempting to construct basic context")
+            
+            # Check if user data is available in the request directly
+            user_name = data.get('name', '')
+            user_social = data.get('social', {})
+            
+            if user_name or user_activity or user_social:
+                logger.info(f"Found basic user data: name='{user_name}', activity='{user_activity}', social={bool(user_social)}")
+                
+                # Create minimal personalization context
+                personalization_data = {
+                    'user_profile': {
+                        'name': user_name,
+                        'activity': user_activity,
+                        'location': location_data,
+                        'social': user_social
+                    },
+                    'activity': user_activity,
+                    'basic_context': True
+                }
+                logger.info("Created basic personalization context from request data")
+            else:
+                logger.warning("No user context data available in request")
+        
         latitude = location_data.get('latitude')
         longitude = location_data.get('longitude')
         
@@ -337,15 +398,57 @@ def get_map_events():
         # Clear previous markers
         mapping_service.clear_markers()
         
-        # Get events from Ticketmaster
+        # Get events from Ticketmaster with enhanced profiling
         logger.info(f"Searching Ticketmaster events for location: {latitude}, {longitude}")
+        logger.info(f"Received personalization_data keys: {list(personalization_data.keys()) if personalization_data else 'None'}")
+        logger.info(f"User activity from request: '{user_activity}'")
         
         try:
+            # Extract enhanced profile data if available
+            enhanced_profile_data = personalization_data.get('enhanced_profile', {})
+            logger.info(f"Enhanced profile data available: {bool(enhanced_profile_data)}")
+            
+            # Create a user profile object for the AI analysis
+            user_profile_for_ai = None
+            if enhanced_profile_data:
+                user_profile_for_ai = enhanced_profile_data
+                logger.info(f"Using enhanced profile with {len(enhanced_profile_data.get('interests', []))} interests")
+            elif personalization_data.get('user_profile'):
+                # Fallback to basic profile data
+                basic_profile = personalization_data['user_profile']
+                user_profile_for_ai = {
+                    'name': basic_profile.get('name', ''),
+                    'location': basic_profile.get('location', {}),
+                    'primary_activity': basic_profile.get('activity', user_activity),  # Use current activity if not in profile
+                    'interests': [],
+                    'preferences': {'activity_style': 'balanced'},
+                    'behavioral_patterns': {},
+                    'activity_context': {'intent': 'seeking'},
+                    'completion_score': 25  # Basic completion
+                }
+                logger.info(f"Using basic profile fallback for user: {basic_profile.get('name', 'Anonymous')}")
+            elif user_activity:
+                # Create minimal profile from just the activity
+                user_profile_for_ai = {
+                    'name': 'Anonymous',
+                    'location': location_data,
+                    'primary_activity': user_activity,
+                    'interests': [],
+                    'preferences': {'activity_style': 'balanced'},
+                    'behavioral_patterns': {},
+                    'activity_context': {'intent': 'seeking'},
+                    'completion_score': 10  # Minimal completion
+                }
+                logger.info(f"Created minimal profile from activity: '{user_activity}'")
+            else:
+                logger.warning("No personalization data available - will use basic search only")
+            
             ticketmaster_events = ticketmaster_service.search_events(
                 location=location_data,
                 user_interests=user_interests,
                 user_activity=user_activity,
-                personalization_data=personalization_data
+                personalization_data=personalization_data,
+                user_profile=user_profile_for_ai  # Pass enhanced profile to AI ranking
             )
             
             if ticketmaster_events:
