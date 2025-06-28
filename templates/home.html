@@ -50,8 +50,29 @@
               placeholder="Tell me what you want to do..."
               required
             ></textarea>
-            <button id="start-btn" class="btn btn-indigo btn-lg mt-4 px-5">
-              Let's Go!
+            <button id="next-btn-3" class="btn btn-indigo btn-lg mt-4 px-5">
+              Next
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Location Permission -->
+        <div id="step-4" class="onboarding-step text-center d-none">
+          <h1 class="display-3 mb-4 text-indigo">Share your location?</h1>
+          <div class="input-container">
+            <p class="lead text-muted mb-4">We'll use your location to provide personalized recommendations</p>
+            <div id="location-status" class="mb-4">
+              <div class="spinner-border text-indigo d-none" role="status" id="location-spinner">
+                <span class="visually-hidden">Getting location...</span>
+              </div>
+              <p id="location-message" class="text-muted">Click below to share your location</p>
+            </div>
+            <button id="get-location-btn" class="btn btn-indigo btn-lg px-5 mb-3">
+              Share Location
+            </button>
+            <br>
+            <button id="skip-location-btn" class="btn btn-outline-secondary">
+              Skip (Use default)
             </button>
           </div>
         </div>
