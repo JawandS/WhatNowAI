@@ -17,56 +17,61 @@
     <div class="row h-100">
       
       <!-- Sidebar -->
-      <div class="col-md-4 col-lg-3 sidebar bg-light border-end h-100 overflow-auto">
-        <div class="p-3">
-          <h3 class="text-indigo mb-3">
-            <i class="fas fa-map-marker-alt"></i>
-            Events Near You
-          </h3>
-          
-          <!-- Search Box -->
-          <div class="mb-3">
-            <div class="input-group">
-              <input type="text" id="search-input" class="form-control" 
-                     placeholder="Search events...">
-              <button class="btn btn-outline-secondary" type="button" id="search-btn">
-                <i class="fas fa-search"></i>
-              </button>
-            </div>
+      <div class="col-md-4 col-lg-3 sidebar bg-light border-end">
+        <div class="sidebar-content">
+          <!-- Fixed Header Section -->
+          <div class="sidebar-header">
+            <h3 class="text-indigo mb-0">
+              <i class="fas fa-map-marker-alt"></i>
+              Events Near You
+            </h3>
           </div>
           
-          <!-- Filter Controls -->
-          <div class="mb-3">
-            <h6 class="text-muted mb-2">Filter by Category</h6>
-            <div id="category-filters" class="btn-group-vertical w-100">
-              <!-- Categories will be populated dynamically -->
+          <!-- Scrollable Body -->
+          <div class="sidebar-body">
+            <!-- Search Box -->
+            <div class="sidebar-fixed-section">
+              <div class="input-group">
+                <input type="text" id="search-input" class="form-control" 
+                       placeholder="Search events...">
+                <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="sidebar-fixed-section">
+              <h6 class="text-muted mb-2">Filter by Category</h6>
+              <div id="category-filters" class="btn-group-vertical w-100">
+                <!-- Categories will be populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="sidebar-fixed-section">
+              <h6 class="text-muted mb-2">Statistics</h6>
+              <div id="event-stats" class="small text-muted">
+                <!-- Stats will be populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Events List - Scrollable -->
+            <div class="events-scroll-container">
+              <h6 class="text-muted mb-2">Events</h6>
+              <div id="events-container">
+                <!-- Events will be populated dynamically -->
+              </div>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="text-center">
+              <div class="spinner-border text-indigo" role="status">
+                <span class="visually-hidden">Loading events...</span>
+              </div>
+              <p class="mt-2 text-muted">Finding events for you...</p>
             </div>
           </div>
-          
-          <!-- Statistics -->
-          <div class="mb-3">
-            <h6 class="text-muted mb-2">Statistics</h6>
-            <div id="event-stats" class="small text-muted">
-              <!-- Stats will be populated dynamically -->
-            </div>
-          </div>
-          
-          <!-- Events List -->
-          <div id="events-list">
-            <h6 class="text-muted mb-2">Events</h6>
-            <div id="events-container">
-              <!-- Events will be populated dynamically -->
-            </div>
-          </div>
-          
-          <!-- Loading Indicator -->
-          <div id="loading-indicator" class="text-center">
-            <div class="spinner-border text-indigo" role="status">
-              <span class="visually-hidden">Loading events...</span>
-            </div>
-            <p class="mt-2 text-muted">Finding events for you...</p>
-          </div>
-          
         </div>
       </div>
       

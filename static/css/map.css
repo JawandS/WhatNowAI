@@ -3,6 +3,40 @@
 .sidebar {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  flex-shrink: 0;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.sidebar-fixed-section {
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.events-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px); /* Adjust based on header/filter height */
 }
 
 .map-controls {
@@ -226,6 +260,43 @@
   color: #6366f1 !important;
 }
 
+/* Additional scrolling improvements */
+.events-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.events-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.events-scroll-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.events-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Smooth scrolling for all scrollable areas */
+.sidebar-body, .events-scroll-container {
+  scroll-behavior: smooth;
+}
+
+/* Ensure events list has proper spacing at bottom */
+#events-container {
+  padding-bottom: 1rem;
+}
+
+/* When no events are shown, center the message */
+.no-events-message {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sidebar {
@@ -240,6 +311,10 @@
   
   .sidebar.show {
     left: 0;
+  }
+  
+  .events-scroll-container {
+    max-height: calc(100vh - 300px); /* Adjust for mobile */
   }
   
   .map-controls {
