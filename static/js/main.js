@@ -342,10 +342,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
-                // Hide loading and show results
-                loadingSection.classList.add('d-none');
-                resultSection.classList.remove('d-none');
-                resultContent.textContent = data.result;
+                // Check if we should redirect to map
+                if (data.redirect_to_map && data.map_url) {
+                    // Store user data for the map page
+                    sessionStorage.setItem('userData', JSON.stringify({
+                        name: userName,
+                        activity: activityInput.value.trim(),
+                        location: userLocation,
+                        social: userSocial,
+                        searchResults: data.search_summaries
+                    }));
+                    
+                    // Redirect to map page
+                    window.location.href = data.map_url;
+                } else {
+                    // Hide loading and show results
+                    loadingSection.classList.add('d-none');
+                    resultSection.classList.remove('d-none');
+                    resultContent.textContent = data.result;
+                }
             } else {
                 // Show error in result section
                 loadingSection.classList.add('d-none');

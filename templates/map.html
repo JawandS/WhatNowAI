@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatNowAI - Events Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+</head>
+<body>
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      
+      <!-- Sidebar -->
+      <div class="col-md-4 col-lg-3 sidebar bg-light border-end h-100 overflow-auto">
+        <div class="p-3">
+          <h3 class="text-indigo mb-3">
+            <i class="fas fa-map-marker-alt"></i>
+            Events Near You
+          </h3>
+          
+          <!-- Search Box -->
+          <div class="mb-3">
+            <div class="input-group">
+              <input type="text" id="search-input" class="form-control" 
+                     placeholder="Search events...">
+              <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Filter Controls -->
+          <div class="mb-3">
+            <h6 class="text-muted mb-2">Filter by Category</h6>
+            <div id="category-filters" class="btn-group-vertical w-100">
+              <!-- Categories will be populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Statistics -->
+          <div class="mb-3">
+            <h6 class="text-muted mb-2">Statistics</h6>
+            <div id="event-stats" class="small text-muted">
+              <!-- Stats will be populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Events List -->
+          <div id="events-list">
+            <h6 class="text-muted mb-2">Events</h6>
+            <div id="events-container">
+              <!-- Events will be populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Loading Indicator -->
+          <div id="loading-indicator" class="text-center">
+            <div class="spinner-border text-indigo" role="status">
+              <span class="visually-hidden">Loading events...</span>
+            </div>
+            <p class="mt-2 text-muted">Finding events for you...</p>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Map Container -->
+      <div class="col-md-8 col-lg-9 p-0 h-100">
+        <div id="map" style="height: 100vh;"></div>
+        
+        <!-- Map Controls -->
+        <div class="map-controls">
+          <button id="locate-btn" class="btn btn-indigo btn-sm" title="Center on my location">
+            <i class="fas fa-crosshairs"></i>
+          </button>
+          <button id="refresh-btn" class="btn btn-secondary btn-sm" title="Refresh events">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        
+        <!-- Event Details Modal -->
+        <div class="modal fade" id="event-modal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="event-title">Event Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body" id="event-details">
+                <!-- Event details will be populated dynamically -->
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="event-link" class="btn btn-indigo" target="_blank">View Event</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+  
+  <!-- Pass data from server to client -->
+  <script>
+    window.userData = {
+      name: "{{ name if name else '' }}",
+      activity: "{{ activity if activity else '' }}",
+      location: {{ location | tojson if location else '{}' }},
+      social: {{ social | tojson if social else '{}' }}
+    };
+  </script>
+</body>
+</html>

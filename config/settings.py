@@ -51,6 +51,8 @@ GEOCODING_CONFIG = {
 # API Keys from environment variables
 ASSEMBLY_AI_KEY = os.getenv('ASSEMBLY_AI_KEY', '')
 HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', '')
+TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY', '')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
 # Search configuration
 SEARCH_CONFIG = {
@@ -63,4 +65,21 @@ SEARCH_CONFIG = {
     'LOCAL_ACTIVITY_SEARCH': True,  # Include local activity searches
     'SEARCH_TIMEOUT': 10,  # Total search timeout in seconds
     'SKIP_GENERAL_SEARCH': True  # Skip general name searches
+}
+
+# Ticketmaster API configuration
+TICKETMASTER_CONFIG = {
+    'BASE_URL': 'https://app.ticketmaster.com/discovery/v2',
+    'SEARCH_RADIUS': 50,  # miles
+    'MAX_EVENTS': 20,
+    'DEFAULT_CATEGORIES': ['music', 'sports', 'arts', 'miscellaneous'],
+    'TIMEOUT': 10
+}
+
+# Map configuration
+MAP_CONFIG = {
+    'DEFAULT_ZOOM': 12,
+    'MAX_MARKERS': 50,
+    'TILE_SERVER': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'ATTRIBUTION': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }

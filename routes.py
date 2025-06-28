@@ -8,8 +8,11 @@ from typing import Dict, Any
 
 from services.tts_service import TTSService, get_introduction_text, INTRODUCTION_TEXTS
 from services.geocoding_service import GeocodingService
+from services.ticketmaster_service import TicketmasterService
+from services.mapping_service import MappingService
 from utils.helpers import validate_coordinates, generate_response_text
-from config.settings import AUDIO_DIR, DEFAULT_TTS_VOICE
+from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, 
+                           TICKETMASTER_CONFIG, MAP_CONFIG)
 from searchmethods.background_search import UserProfile, perform_background_search
 
 logger = logging.getLogger(__name__)
@@ -20,6 +23,8 @@ main_bp = Blueprint('main', __name__)
 # Initialize services
 tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
 geocoding_service = GeocodingService()
+ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CONFIG)
+mapping_service = MappingService(MAP_CONFIG)
 
 
 @main_bp.route('/')
@@ -189,7 +194,7 @@ def process_request():
         
         # Generate response text with search context
         result = generate_response_text(name, activity, location_data, social_data, search_summaries)
-        print(f"search {search_summaries}")
+        
         return jsonify({
             'success': True,
             'result': result,
@@ -198,7 +203,9 @@ def process_request():
             'location': location_data,
             'social': social_data,
             'search_summaries': search_summaries,
-            'total_search_results': len(search_results) if search_results else 0
+            'total_search_results': len(search_results) if search_results else 0,
+            'redirect_to_map': True,  # Signal frontend to redirect to map
+            'map_url': '/map'
         })
     
     except Exception as e:
@@ -216,6 +223,19 @@ def reverse_geocode():
         data = request.get_json()
         latitude = data.get('latitude')
         longitude = data.get('longitude')
+        
+        # Try to convert to float if they're strings
+        try:
+            if latitude is not None:
+                latitude = float(latitude)
+            if longitude is not None:
+                longitude = float(longitude)
+        except (ValueError, TypeError) as e:
+            logger.error(f"Failed to convert coordinates to float in geocode: {e}")
+            return jsonify({
+                'success': False,
+                'message': 'Invalid coordinate format. Coordinates must be numbers.'
+            }), 400
         
         if not validate_coordinates(latitude, longitude):
             return jsonify({
@@ -257,3 +277,126 @@ def serve_audio(audio_id: str):
     except Exception as e:
         logger.error(f"Audio serve error: {e}")
         abort(500)
+
+
+@main_bp.route('/map/events', methods=['POST'])
+def get_map_events():
+    """Get events and activities for map display"""
+    try:
+        data = request.get_json()
+        location_data = data.get('location', {})
+        user_interests = data.get('interests', [])
+        user_activity = data.get('activity', '')
+        
+        latitude = location_data.get('latitude')
+        longitude = location_data.get('longitude')
+        
+        # Debug logging
+        logger.info(f"Received location_data: {location_data}")
+        logger.info(f"Raw coordinates - lat: {latitude} (type: {type(latitude)}), lon: {longitude} (type: {type(longitude)})")
+        
+        # Try to convert to float if they're strings
+        try:
+            if latitude is not None:
+                latitude = float(latitude)
+            if longitude is not None:
+                longitude = float(longitude)
+        except (ValueError, TypeError) as e:
+            logger.error(f"Failed to convert coordinates to float: {e}")
+            return jsonify({
+                'success': False,
+                'message': 'Invalid coordinate format. Coordinates must be numbers.'
+            }), 400
+        
+        if not validate_coordinates(latitude, longitude):
+            logger.error(f"Got invalid coordinates: {latitude}, {longitude}")
+            return jsonify({
+                'success': False,
+                'message': 'Invalid location coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.'
+            }), 400
+        
+        # Clear previous markers
+        mapping_service.clear_markers()
+        
+        # Get events from Ticketmaster
+        logger.info(f"Searching Ticketmaster events for location: {latitude}, {longitude}")
+        
+        try:
+            ticketmaster_events = ticketmaster_service.search_events(
+                location=location_data,
+                user_interests=user_interests,
+                user_activity=user_activity
+            )
+            
+            if ticketmaster_events:
+                mapping_service.add_ticketmaster_events(ticketmaster_events)
+                logger.info(f"Added {len(ticketmaster_events)} Ticketmaster events to map")
+            else:
+                logger.info("No Ticketmaster events found")
+                
+        except Exception as tm_error:
+            logger.warning(f"Ticketmaster search failed: {tm_error}")
+        
+        # TODO: Add other API integrations here
+        # mapping_service.add_eventbrite_events(eventbrite_events)
+        # mapping_service.add_meetup_events(meetup_events)
+        
+        # Get map data
+        map_data = mapping_service.get_map_data(latitude, longitude)
+        category_stats = mapping_service.get_category_stats()
+        
+        return jsonify({
+            'success': True,
+            'map_data': map_data,
+            'category_stats': category_stats,
+            'total_events': len(mapping_service.get_all_markers())
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting map events: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while loading events.'
+        }), 500
+
+
+@main_bp.route('/map/search', methods=['POST'])
+def search_map_events():
+    """Search events on the map"""
+    try:
+        data = request.get_json()
+        query = data.get('query', '').strip()
+        
+        if not query:
+            return jsonify({
+                'success': False,
+                'message': 'Please provide a search query.'
+            }), 400
+        
+        # Search markers
+        matching_markers = mapping_service.search_markers(query)
+        
+        return jsonify({
+            'success': True,
+            'markers': [marker.to_dict() for marker in matching_markers],
+            'total_results': len(matching_markers)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching map events: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while searching events.'
+        }), 500
+
+
+@main_bp.route('/map')
+def map_view():
+    """Render the map page"""
+    # The map page will get user data from sessionStorage via JavaScript
+    # We provide empty defaults that will be overridden by the frontend
+    return render_template('map.html', 
+                         name='', 
+                         activity='', 
+                         location={}, 
+                         social={})

@@ -58,7 +58,7 @@ def validate_coordinates(latitude: Optional[float], longitude: Optional[float]) 
         if -90 <= lat <= 90 and -180 <= lon <= 180:
             return True
         return False
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return False
 
 
