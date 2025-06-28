@@ -8,7 +8,7 @@ import logging.config
 from flask import Flask
 
 from routes import main_bp
-from config.settings import FLASK_CONFIG, LOGGING_CONFIG, AUDIO_DIR
+from config.settings import FLASK_CONFIG, LOGGING_CONFIG, AUDIO_DIR, check_api_keys
 from services.tts_service import TTSService
 
 # Configure logging
@@ -44,6 +44,9 @@ def create_app() -> Flask:
 
 def main():
     """Main entry point"""
+    # Check API keys on startup
+    check_api_keys()
+    
     app = create_app()
     
     logger.info(f"Starting WhatNowAI on {FLASK_CONFIG['HOST']}:{FLASK_CONFIG['PORT']}")

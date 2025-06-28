@@ -7,6 +7,27 @@ from pathlib import Path
 # Base directory
 BASE_DIR = Path(__file__).parent.parent
 
+def load_secrets():
+    """Load API keys and secrets from secrets.txt file"""
+    secrets = {}
+    secrets_file = BASE_DIR / 'secrets.txt'
+    
+    if secrets_file.exists():
+        try:
+            with open(secrets_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and '=' in line and not line.startswith('#'):
+                        key, value = line.split('=', 1)
+                        secrets[key.strip()] = value.strip()
+        except Exception as e:
+            print(f"Warning: Could not load secrets.txt: {e}")
+    
+    return secrets
+
+# Load secrets from file
+_secrets = load_secrets()
+
 # Audio configuration
 AUDIO_DIR = BASE_DIR / 'static' / 'audio'
 DEFAULT_TTS_VOICE = "en-US-JennyNeural"
@@ -48,11 +69,29 @@ GEOCODING_CONFIG = {
     'TIMEOUT': 10
 }
 
-# API Keys from environment variables
-ASSEMBLY_AI_KEY = os.getenv('ASSEMBLY_AI_KEY', '')
-HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', '')
-TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY', '')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+# API Keys from secrets.txt file and environment variables (env vars take precedence)
+ASSEMBLY_AI_KEY = os.getenv('ASSEMBLY_AI_KEY', _secrets.get('ASSEMBLY_AI_KEY', ''))
+HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', _secrets.get('HUGGINGFACE_TOKEN', ''))
+TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY', _secrets.get('TICKETMASTER_CONSUMER_KEY', ''))
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', _secrets.get('OPENAI_API_KEY', ''))
+
+# Debug function to check API key status
+def check_api_keys():
+    """Check which API keys are available"""
+    keys_status = {
+        'TICKETMASTER_API_KEY': 'SET' if TICKETMASTER_API_KEY else 'NOT SET',
+        'OPENAI_API_KEY': 'SET' if OPENAI_API_KEY else 'NOT SET',
+        'ASSEMBLY_AI_KEY': 'SET' if ASSEMBLY_AI_KEY else 'NOT SET',
+        'HUGGINGFACE_TOKEN': 'SET' if HUGGINGFACE_TOKEN else 'NOT SET'
+    }
+    
+    print("🔑 API Keys Status:")
+    for key, status in keys_status.items():
+        print(f"   {key}: {status}")
+        if status == 'SET' and key == 'TICKETMASTER_API_KEY':
+            print(f"   {key} value: {TICKETMASTER_API_KEY[:10]}...")
+    
+    return keys_status
 
 # Search configuration
 SEARCH_CONFIG = {
