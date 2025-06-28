@@ -8,10 +8,17 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent.parent
 
 def load_secrets():
-    """Load API keys and secrets from secrets.txt file"""
+    """
+    Load API keys and secrets from secrets.txt file and fall back to environment variables if not found.
+
+    Returns:
+        dict: A dictionary containing secrets.
+    """
+    vars = ["OPENAI_API_KEY", "TICKETMASTER_CONSUMER_KEY", "TICKETMASTER_CONSUMER_SECRET"]
     secrets = {}
     secrets_file = BASE_DIR / 'secrets.txt'
-    
+
+    # Load from secrets.txt if it exists
     if secrets_file.exists():
         try:
             with open(secrets_file, 'r') as f:
@@ -22,7 +29,14 @@ def load_secrets():
                         secrets[key.strip()] = value.strip()
         except Exception as e:
             print(f"Warning: Could not load secrets.txt: {e}")
-    
+
+    # Fallback to environment variables for missing keys
+    for var in vars:
+        if var not in secrets:
+            env_val = os.getenv(var)
+            if env_val:
+                secrets[var] = env_val
+
     return secrets
 
 # Load secrets from file
