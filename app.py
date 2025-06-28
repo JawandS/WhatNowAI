@@ -73,7 +73,7 @@ tools = [
 # LLM & agent setup
 # ----------------------------------------
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     temperature=0.7,
     api_key=openai_key
 )
