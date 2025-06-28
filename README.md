@@ -1,17 +1,18 @@
 # WhatNowAI
 
-A Flask-based multi-step onboarding application that helps users determine their next steps based on their location, interests, and social media presence. Features include automatic location detection, social media integration, text-to-speech for enhanced user experience, and intelligent background research using web scraping.
+A Flask-based multi-step onboarding application that helps users discover local events and activities based on their location, interests, and preferences. Features intelligent event discovery, interactive maps, and personalized recommendations.
 
 ## Features
 
 - **Multi-step Onboarding**: Smooth, animated progression through user information collection
 - **Text-to-Speech Integration**: EdgeTTS provides voice guidance during onboarding steps
-- **Voice Transcription**: AssemblyAI-powered voice input for activities
+- **Event Discovery**: Ticketmaster API integration for finding local events and activities
+- **Interactive Maps**: Visual display of nearby events with filtering and search capabilities
 - **Location Detection**: Automatic geolocation with reverse geocoding
-- **Social Media Integration**: Optional Twitter/X, Instagram, GitHub, and LinkedIn handle collection
+- **Social Media Integration**: Optional social media handle collection for enhanced recommendations
 - **Background Research**: Intelligent web scraping to gather relevant context about users and activities
 - **Privacy-focused Search**: Uses DuckDuckGo for user research while respecting privacy
-- **Responsive Design**: Modern, mobile-friendly interface
+- **Responsive Design**: Modern, mobile-friendly interface with optimized scrolling
 - **Modular Architecture**: Clean separation of concerns with service-based design
 
 ## Project Structure
@@ -26,26 +27,30 @@ WhatNowAI/
 ├── services/
 │   ├── __init__.py
 │   ├── tts_service.py        # Text-to-Speech service
-│   ├── voice_transcription.py # Voice input service
-│   └── geocoding_service.py  # Location services
+│   ├── geocoding_service.py  # Location services
+│   ├── ticketmaster_service.py # Event discovery service
+│   └── mapping_service.py    # Map and marker management
 ├── utils/
 │   ├── __init__.py
 │   └── helpers.py            # Utility functions
 ├── searchmethods/
 │   ├── __init__.py
 │   ├── background_search.py  # Web scraping and search service
-│   ├── README.md             # Search methods documentation
-│   └── test_search.py        # Test script for search functionality
+│   └── README.md             # Search methods documentation
 ├── templates/
-│   └── home.html             # Main template
+│   ├── home.html             # Onboarding template
+│   └── map.html              # Interactive map template
 ├── static/
 │   ├── css/
-│   │   └── styles.css        # Styling
+│   │   ├── styles.css        # Main styling
+│   │   └── map.css           # Map-specific styling
 │   ├── js/
-│   │   └── main.js           # Frontend logic
+│   │   ├── main.js           # Onboarding logic
+│   │   └── map.js            # Map functionality
 │   ├── images/
 │   └── audio/                # Generated TTS audio files
 ├── requirements.txt          # Python dependencies
+├── secrets.txt               # API keys and secrets
 └── README.md
 ```
 
@@ -83,19 +88,26 @@ python app.py
    - **Step 3**: Describe what you want to do
    - **Step 4**: Share location (optional)
    - **Processing**: AI analyzes your information
-   - **Results**: Personalized recommendations
+   - **Map View**: Interactive map showing local events and activities
 
 ## Technical Details
 
-### TTS Integration
+### Event Discovery
+- Ticketmaster API integration for real-time event data
+- Event categorization (music, sports, arts, family, etc.)
+- Location-based filtering and search capabilities
+- Event details including pricing, venue, and ticketing information
+
+### Interactive Maps
+- Leaflet.js for interactive map visualization
+- Custom markers for different event categories
+- Real-time event filtering and search
+- Responsive design optimized for mobile and desktop
+
+### Text-to-Speech Integration
 - Uses Microsoft EdgeTTS for natural voice synthesis
 - Audio plays automatically during onboarding steps
 - Temporary audio files are cleaned up automatically
-
-### Voice Transcription
-- AssemblyAI integration for speech-to-text
-- Real-time voice input for activity descriptions
-- WebRTC-based audio recording in the browser
 
 ### Background Research
 - Intelligent web scraping using BeautifulSoup and requests
@@ -114,33 +126,46 @@ python app.py
 - Privacy-focused with user consent
 
 ### Architecture
-- **Service Layer**: Modular services for TTS, geocoding, and data processing
-- **Configuration Management**: Centralized settings and logging
+- **Service Layer**: Modular services for TTS, geocoding, events, and mapping
+- **Configuration Management**: Centralized settings and API key management
 - **Error Handling**: Comprehensive error handling and logging
-- **Responsive Design**: Mobile-first approach with smooth animations
+- **Responsive Design**: Mobile-first approach with optimized scrolling
 
 ## Dependencies
 
-- **Flask**: Web framework
+- **Flask**: Web framework for backend API
 - **edge-tts**: Text-to-speech synthesis
-- **requests**: HTTP library for API calls
-- **beautifulsoup4**: HTML parsing (for future social media features)
+- **requests**: HTTP library for API calls and web scraping
+- **beautifulsoup4**: HTML parsing for web scraping
+- **Leaflet.js**: Interactive map visualization (frontend)
+- **Bootstrap 5**: Responsive UI framework (frontend)
 
 ## Configuration
 
 Key configuration options in `config/settings.py`:
 - **TTS Voice**: Default voice for text-to-speech
 - **Audio Directory**: Location for temporary audio files
+- **API Keys**: Ticketmaster, OpenAI, and other service credentials
 - **Logging**: Structured logging configuration
 - **Flask Settings**: Debug mode, host, and port
 
 ## API Endpoints
 
-- `GET /`: Main application page
+### Core Application
+- `GET /`: Main onboarding page
+- `GET /map`: Interactive map page
+
+### Onboarding & Processing
 - `POST /tts/introduction/<step>`: Generate TTS for onboarding steps
 - `POST /submit`: Submit user information
-- `POST /process`: Process user request
+- `POST /process`: Process user request and redirect to map
+
+### Location & Events
 - `POST /geocode`: Reverse geocode coordinates
+- `POST /map/events`: Get events for map display
+- `POST /map/search`: Search events on the map
+
+### Audio & Assets
 - `GET /audio/<audio_id>`: Serve generated audio files
 
 ## Development

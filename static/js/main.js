@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextBtn2 = document.getElementById('next-btn-2');
     const nextBtn3 = document.getElementById('next-btn-3');
     const getLocationBtn = document.getElementById('get-location-btn');
-    const skipLocationBtn = document.getElementById('skip-location-btn');
     
     // Loading and result elements
     const loadingSection = document.getElementById('loading-section');
@@ -274,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners for location buttons
     getLocationBtn.addEventListener('click', getCurrentLocation);
-    skipLocationBtn.addEventListener('click', useDefaultLocation);
 
     // Step 4 -> Processing flow
     async function startProcessing() {

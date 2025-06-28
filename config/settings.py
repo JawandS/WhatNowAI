@@ -70,10 +70,11 @@ GEOCODING_CONFIG = {
 }
 
 # API Keys from secrets.txt file and environment variables (env vars take precedence)
-ASSEMBLY_AI_KEY = os.getenv('ASSEMBLY_AI_KEY', _secrets.get('ASSEMBLY_AI_KEY', ''))
-HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', _secrets.get('HUGGINGFACE_TOKEN', ''))
 TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY', _secrets.get('TICKETMASTER_CONSUMER_KEY', ''))
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', _secrets.get('OPENAI_API_KEY', ''))
+
+# Optional API keys for advanced features
+HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', _secrets.get('HUGGINGFACE_TOKEN', ''))
 
 # Debug function to check API key status
 def check_api_keys():
@@ -81,7 +82,6 @@ def check_api_keys():
     keys_status = {
         'TICKETMASTER_API_KEY': 'SET' if TICKETMASTER_API_KEY else 'NOT SET',
         'OPENAI_API_KEY': 'SET' if OPENAI_API_KEY else 'NOT SET',
-        'ASSEMBLY_AI_KEY': 'SET' if ASSEMBLY_AI_KEY else 'NOT SET',
         'HUGGINGFACE_TOKEN': 'SET' if HUGGINGFACE_TOKEN else 'NOT SET'
     }
     

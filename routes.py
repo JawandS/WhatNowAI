@@ -1,9 +1,14 @@
 """
-Flask application routes
+Flask application routes for WhatNowAI
+
+This module defines all the API endpoints for the WhatNowAI application, including:
+- Onboarding flow with TTS integration
+- Location services and geocoding
+- Event discovery and mapping
+- Background research and personalization
 """
 from flask import Blueprint, render_template, request, jsonify, abort, send_file
 import logging
-import time
 from typing import Dict, Any
 
 from services.tts_service import TTSService, get_introduction_text, INTRODUCTION_TEXTS
@@ -312,7 +317,7 @@ def get_map_events():
             logger.error(f"Got invalid coordinates: {latitude}, {longitude}")
             return jsonify({
                 'success': False,
-                'message': 'Invalid location coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.'
+                'message': 'Valid location is required. Please go back to onboarding and share your location to find events near you.'
             }), 400
         
         # Clear previous markers

@@ -1,12 +1,17 @@
+# Core web framework
 Flask
-langchain
-langchain_community
-langchain_openai
+
+# API integrations
 openai
 requests
+
+# Web scraping and parsing
 beautifulsoup4
-edge-tts
-websocket-client
-aiohttp
 lxml
+
+# Text-to-speech
+edge-tts
+
+# HTTP client
+aiohttp
 urllib3

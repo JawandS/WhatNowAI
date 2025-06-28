@@ -1,5 +1,9 @@
 """
-Ticketmaster API service for finding events and activities
+Ticketmaster API service for event discovery
+
+This module integrates with the Ticketmaster Discovery API to find local events
+and activities based on user location and interests. Includes event categorization,
+filtering, and comprehensive error handling for reliable event discovery.
 """
 
 import requests

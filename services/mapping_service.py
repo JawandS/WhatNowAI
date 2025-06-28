@@ -1,5 +1,9 @@
 """
-Mapping service for displaying events and activities on an interactive map
+Mapping service for interactive event visualization
+
+This module manages map markers, event categorization, and geographical data
+for the interactive map interface. Supports filtering, searching, and real-time
+event display with category-based organization and statistics.
 """
 
 import logging

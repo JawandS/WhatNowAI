@@ -1,5 +1,9 @@
 """
 Geocoding service for location handling
+
+This module provides location services using OpenStreetMap's Nominatim API,
+including reverse geocoding for converting coordinates to address information.
+Privacy-focused implementation with configurable timeouts and user agents.
 """
 import requests
 import logging

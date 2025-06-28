@@ -1,8 +1,13 @@
 """
 WhatNowAI Flask Application
 
-A multi-step onboarding application that helps users determine their next steps
-based on their location, interests, and social media presence.
+An intelligent activity recommendation system that helps users discover local events 
+and activities based on their location, interests, and preferences. Features include:
+
+- Multi-step onboarding with text-to-speech guidance
+- Ticketmaster API integration for event discovery
+- Interactive maps with event visualization
+- Background research for personalized recommendations
 """
 import logging.config
 from flask import Flask

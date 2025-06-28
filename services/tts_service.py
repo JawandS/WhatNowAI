@@ -1,5 +1,8 @@
 """
-Text-to-Speech service using Edge TTS
+Text-to-Speech service using Microsoft Edge TTS
+
+This module provides text-to-speech functionality for the WhatNowAI application,
+including dynamic text generation for onboarding steps and audio file management.
 """
 import asyncio
 import edge_tts
