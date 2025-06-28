@@ -143,7 +143,8 @@ class EventsMap {
                 body: JSON.stringify({
                     location: userData.location || {},
                     interests: this.extractInterests(),
-                    activity: userData.activity || ''
+                    activity: userData.activity || '',
+                    personalization_data: userData.personalization_data || {}  // Include personalization data
                 })
             });
             
@@ -228,19 +229,26 @@ class EventsMap {
     }
     
     extractInterests() {
-        // Extract interests from user's activity and social data
+        // Extract interests from user's activity, social data, and personalization data
         const interests = [];
         const activity = window.userData.activity || '';
+        const personalizationData = window.userData.personalization_data || {};
         
         // Simple keyword mapping to interests
         const keywordMap = {
-            'music': ['music', 'concert', 'band', 'song', 'album'],
-            'sports': ['sport', 'game', 'team', 'fitness', 'exercise'],
-            'arts': ['art', 'theater', 'museum', 'gallery', 'dance'],
-            'food': ['food', 'restaurant', 'cooking', 'cuisine'],
-            'technology': ['tech', 'programming', 'code', 'software']
+            'music': ['music', 'concert', 'band', 'song', 'album', 'artist', 'festival', 'show', 'performance'],
+            'sports': ['sport', 'game', 'team', 'fitness', 'exercise', 'basketball', 'football', 'soccer', 'tennis', 'golf'],
+            'arts': ['art', 'theater', 'museum', 'gallery', 'dance', 'exhibition', 'culture', 'painting', 'sculpture'],
+            'food': ['food', 'restaurant', 'cooking', 'cuisine', 'chef', 'dining', 'culinary', 'recipe', 'meal'],
+            'technology': ['tech', 'programming', 'code', 'software', 'computer', 'digital', 'innovation', 'startup'],
+            'entertainment': ['movie', 'film', 'tv', 'show', 'entertainment', 'comedy', 'drama', 'cinema'],
+            'nature': ['nature', 'outdoor', 'hiking', 'camping', 'park', 'beach', 'environment', 'eco'],
+            'social': ['community', 'social', 'networking', 'meetup', 'group', 'volunteer', 'charity'],
+            'education': ['education', 'learning', 'workshop', 'seminar', 'course', 'training', 'lecture'],
+            'business': ['business', 'networking', 'entrepreneur', 'startup', 'conference', 'professional']
         };
         
+        // Extract from activity description
         const activityLower = activity.toLowerCase();
         for (const [interest, keywords] of Object.entries(keywordMap)) {
             if (keywords.some(keyword => activityLower.includes(keyword))) {
@@ -248,6 +256,32 @@ class EventsMap {
             }
         }
         
+        // Extract from personalization data search summaries
+        if (personalizationData.search_summaries) {
+            for (const [source, summary] of Object.entries(personalizationData.search_summaries)) {
+                if (summary && typeof summary === 'string') {
+                    const summaryLower = summary.toLowerCase();
+                    for (const [interest, keywords] of Object.entries(keywordMap)) {
+                        if (keywords.some(keyword => summaryLower.includes(keyword))) {
+                            if (!interests.includes(interest)) {
+                                interests.push(interest);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If personalization data has extracted interests, include them
+        if (personalizationData.interests && Array.isArray(personalizationData.interests)) {
+            personalizationData.interests.forEach(interestObj => {
+                if (interestObj.category && !interests.includes(interestObj.category)) {
+                    interests.push(interestObj.category);
+                }
+            });
+        }
+        
+        console.log('Extracted interests:', interests);
         return interests;
     }
     

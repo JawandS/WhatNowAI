@@ -200,6 +200,18 @@ def process_request():
         # Generate response text with search context
         result = generate_response_text(name, activity, location_data, social_data, search_summaries)
         
+        # Prepare personalization data for later use
+        personalization_data = {
+            'search_results': search_results,
+            'search_summaries': search_summaries,
+            'user_profile': {
+                'name': name,
+                'activity': activity,
+                'location': location_data,
+                'social': social_data
+            }
+        }
+        
         return jsonify({
             'success': True,
             'result': result,
@@ -208,6 +220,7 @@ def process_request():
             'location': location_data,
             'social': social_data,
             'search_summaries': search_summaries,
+            'personalization_data': personalization_data,  # Include personalization data
             'total_search_results': len(search_results) if search_results else 0,
             'redirect_to_map': True,  # Signal frontend to redirect to map
             'map_url': '/map'
@@ -292,6 +305,7 @@ def get_map_events():
         location_data = data.get('location', {})
         user_interests = data.get('interests', [])
         user_activity = data.get('activity', '')
+        personalization_data = data.get('personalization_data', {})  # Enhanced personalization data
         
         latitude = location_data.get('latitude')
         longitude = location_data.get('longitude')
@@ -330,7 +344,8 @@ def get_map_events():
             ticketmaster_events = ticketmaster_service.search_events(
                 location=location_data,
                 user_interests=user_interests,
-                user_activity=user_activity
+                user_activity=user_activity,
+                personalization_data=personalization_data
             )
             
             if ticketmaster_events:

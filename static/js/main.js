@@ -342,13 +342,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 // Check if we should redirect to map
                 if (data.redirect_to_map && data.map_url) {
-                    // Store user data for the map page
+                    // Store user data for the map page with enhanced personalization data
                     sessionStorage.setItem('userData', JSON.stringify({
                         name: userName,
                         activity: activityInput.value.trim(),
                         location: userLocation,
                         social: userSocial,
-                        searchResults: data.search_summaries
+                        searchResults: data.search_summaries,
+                        personalization_data: data.personalization_data  // Include personalization data
                     }));
                     
                     // Redirect to map page

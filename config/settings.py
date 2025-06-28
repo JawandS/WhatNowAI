@@ -112,7 +112,8 @@ TICKETMASTER_CONFIG = {
     'SEARCH_RADIUS': 50,  # miles
     'MAX_EVENTS': 20,
     'DEFAULT_CATEGORIES': ['music', 'sports', 'arts', 'miscellaneous'],
-    'TIMEOUT': 10
+    'TIMEOUT': 10,
+    'MIN_RELEVANCE_SCORE': 0.15  # Minimum relevance score for event filtering
 }
 
 # Map configuration
