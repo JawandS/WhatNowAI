@@ -14,6 +14,7 @@ def submit_info():
         data = request.get_json()
         name = data.get('name', '').strip()
         activity = data.get('activity', '').strip()
+        social = data.get('social', {})
         
         if not name or not activity:
             return jsonify({
@@ -29,6 +30,7 @@ def submit_info():
             'message': response_message,
             'name': name,
             'activity': activity,
+            'social': social,
             'processing': True
         })
     
@@ -73,6 +75,7 @@ def process_request():
         name = data.get('name', '').strip()
         activity = data.get('activity', '').strip()
         location_data = data.get('location', {})
+        social_data = data.get('social', {})
         
         if not name or not activity:
             return jsonify({
@@ -87,6 +90,10 @@ def process_request():
         longitude = location_data.get('longitude')
         city = location_data.get('city', 'Unknown')
         
+        # Extract social media information
+        twitter_handle = social_data.get('twitter', '').strip()
+        instagram_handle = social_data.get('instagram', '').strip()
+        
         # TODO: Add your actual AI/processing logic here
         # This is a placeholder for now - simulate processing time
         import time
@@ -98,13 +105,29 @@ def process_request():
         if zipcode != 'Unknown':
             location_str += f" ({zipcode})"
         
-        result = f"Great news, {name}! I've analyzed your request to {activity} in {location_str}.\n\n" \
-                f"Here are some location-specific suggestions:\n\n" \
+        result = f"Great news, {name}! I've analyzed your request to {activity} in {location_str}.\n\n"
+        
+        # Add social media context if provided
+        if twitter_handle or instagram_handle:
+            result += f"I noticed you're active on social media"
+            if twitter_handle and instagram_handle:
+                result += f" (@{twitter_handle} on X, @{instagram_handle} on Instagram)"
+            elif twitter_handle:
+                result += f" (@{twitter_handle} on X)"
+            elif instagram_handle:
+                result += f" (@{instagram_handle} on Instagram)"
+            result += f". This gives me additional context about your interests!\n\n"
+        
+        result += f"Here are some location-specific suggestions:\n\n" \
                 f"1. Start by breaking down '{activity}' into smaller steps\n" \
                 f"2. Research local resources in {country} that can help with {activity}\n" \
                 f"3. Check for any location-specific requirements or regulations\n" \
                 f"4. Set a timeline for completion\n" \
                 f"5. Connect with local communities or groups in your area\n\n"
+        
+        if twitter_handle or instagram_handle:
+            result += f"6. Share your {activity} journey on social media to connect with like-minded people\n" \
+                     f"7. Follow relevant accounts and hashtags related to {activity}\n\n"
         
         if latitude and longitude:
             result += f"Based on your precise location ({latitude:.4f}, {longitude:.4f}), I can provide even more targeted recommendations.\n\n"
@@ -116,7 +139,8 @@ def process_request():
             'result': result,
             'name': name,
             'activity': activity,
-            'location': location_data
+            'location': location_data,
+            'social': social_data
         })
     
     except Exception as e:

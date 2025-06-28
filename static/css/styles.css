@@ -214,3 +214,22 @@ h1 {
   }
 }
 
+/* Social Media Section */
+.social-media-section {
+  padding: 1rem 0;
+}
+
+.social-media-section .input-group-text {
+  color: #6B7280;
+  font-size: 0.9rem;
+}
+
+.social-media-section .form-control {
+  font-size: 1rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.social-media-section .form-control:focus {
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.2);
+}
+

@@ -24,8 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form inputs
     const nameInput = document.getElementById('user-name');
     const activityInput = document.getElementById('user-activity');
+    const twitterInput = document.getElementById('user-twitter');
+    const instagramInput = document.getElementById('user-instagram');
     
     let userName = '';
+    let userSocial = {};
     let userLocation = null;
 
     // Step 1 -> Step 2 transition
@@ -50,6 +53,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         userName = name;
+        
+        // Capture social media handles (optional)
+        userSocial = {
+            twitter: twitterInput.value.trim().replace('@', ''), // Remove @ if user added it
+            instagram: instagramInput.value.trim().replace('@', '') // Remove @ if user added it
+        };
+        
         step2.classList.add('slide-left');
         setTimeout(() => {
             step2.classList.add('d-none');
@@ -220,7 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     name: userName,
-                    activity: activityInput.value.trim()
+                    activity: activityInput.value.trim(),
+                    social: userSocial
                 })
             });
             
@@ -256,7 +267,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     name: userName,
                     activity: activityInput.value.trim(),
-                    location: userLocation
+                    location: userLocation,
+                    social: userSocial
                 })
             });
             
@@ -287,7 +299,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset all inputs and variables
         nameInput.value = '';
         activityInput.value = '';
+        twitterInput.value = '';
+        instagramInput.value = '';
         userName = '';
+        userSocial = {};
         userLocation = null;
         
         // Reset location UI
