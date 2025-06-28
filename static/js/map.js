@@ -156,7 +156,6 @@ class EventsMap {
                 
                 this.displayEvents();
                 this.displayCategoryFilters(data.category_stats || {});
-                this.displayStatistics(data.category_stats || {});
                 this.addMarkersToMap();
             } else {
                 this.showError(data.message || 'Failed to load events');
@@ -397,33 +396,6 @@ class EventsMap {
         buttons.forEach(button => {
             const category = button.dataset.category;
             button.classList.toggle('active', this.activeFilters.has(category));
-        });
-    }
-    
-    displayStatistics(categoryStats) {
-        const container = document.getElementById('event-stats');
-        container.innerHTML = '';
-        
-        const totalEvents = Object.values(categoryStats).reduce((sum, count) => sum + count, 0);
-        
-        // Total events
-        const totalDiv = document.createElement('div');
-        totalDiv.className = 'stat-item';
-        totalDiv.innerHTML = `
-            <span class="stat-label">Total Events</span>
-            <span class="stat-value">${totalEvents}</span>
-        `;
-        container.appendChild(totalDiv);
-        
-        // Category breakdown
-        Object.entries(categoryStats).forEach(([category, count]) => {
-            const div = document.createElement('div');
-            div.className = 'stat-item';
-            div.innerHTML = `
-                <span class="stat-label">${category}</span>
-                <span class="stat-value">${count}</span>
-            `;
-            container.appendChild(div);
         });
     }
     
