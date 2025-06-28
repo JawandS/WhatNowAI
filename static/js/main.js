@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextBtn2 = document.getElementById('next-btn-2');
     const startBtn = document.getElementById('start-btn');
     
-    // Chat elements
-    const chatSection = document.getElementById('chat-section');
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+    // Loading and result elements
+    const loadingSection = document.getElementById('loading-section');
+    const resultSection = document.getElementById('result-section');
+    const loadingMessage = document.getElementById('loading-message');
+    const resultContent = document.getElementById('result-content');
     const restartBtn = document.getElementById('restart-btn');
     
     // Form inputs
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800);
     });
 
-    // Step 2 -> Step 3 transition (Enter key or button)
+    // Step 2 -> Step 3 transition
     function goToStep3() {
         const name = nameInput.value.trim();
         if (!name) {
@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Step 3 -> Chat transition (Enter key or button)
-    async function startChat() {
+    // Step 3 -> Loading -> Results flow
+    async function startProcessing() {
         const activity = activityInput.value.trim();
         if (!activity) {
             activityInput.focus();
@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const response = await fetch('/submit', {
+            // First, show initial response and loading screen
+            const submitResponse = await fetch('/submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,24 +81,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
             
-            const data = await response.json();
+            const submitData = await submitResponse.json();
             
-            if (data.success) {
-                // Hide onboarding and show chat
+            if (submitData.success) {
+                // Hide onboarding and show loading
                 step3.classList.add('slide-left');
                 setTimeout(() => {
                     step3.classList.add('d-none');
-                    chatSection.classList.remove('d-none');
-                    
-                    // Add initial messages to chat
-                    addMessage(`Hi! My name is ${userName} and I want to ${activity}`, 'user');
-                    addMessage(data.message, 'bot');
-                    
-                    // Focus on chat input
-                    userInput.focus();
+                    loadingSection.classList.remove('d-none');
+                    loadingMessage.textContent = submitData.message;
                 }, 800);
+
+                // Start background processing
+                processInBackground();
             } else {
-                alert(data.message || 'Something went wrong. Please try again.');
+                alert(submitData.message || 'Something went wrong. Please try again.');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -105,64 +103,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    startBtn.addEventListener('click', startChat);
-    activityInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            startChat();
-        }
-    });
-
-    // Chat functionality (same as before)
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
-        
-        // Add user message to chat
-        addMessage(message, 'user');
-        userInput.value = '';
-        
+    async function processInBackground() {
         try {
-            const response = await fetch('/chat', {
+            const response = await fetch('/process', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: message
+                    name: userName,
+                    activity: activityInput.value.trim()
                 })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                addMessage(data.response, 'bot');
+                // Hide loading and show results
+                loadingSection.classList.add('d-none');
+                resultSection.classList.remove('d-none');
+                resultContent.textContent = data.result;
             } else {
-                addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                // Show error in result section
+                loadingSection.classList.add('d-none');
+                resultSection.classList.remove('d-none');
+                resultContent.textContent = 'Sorry, there was an error processing your request: ' + (data.message || 'Unknown error');
             }
         } catch (error) {
             console.error('Error:', error);
-            addMessage('Network error. Please check your connection.', 'bot');
+            // Show error in result section
+            loadingSection.classList.add('d-none');
+            resultSection.classList.remove('d-none');
+            resultContent.textContent = 'Network error. Please check your connection and try again.';
         }
     }
 
-    // Add message to chat box
-    function addMessage(text, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}`;
-        messageDiv.textContent = text;
-        
-        chatBox.appendChild(messageDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Handle send button click
-    sendBtn.addEventListener('click', sendMessage);
-
-    // Handle Enter key in chat input
-    userInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
+    startBtn.addEventListener('click', startProcessing);
+    activityInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            startProcessing();
         }
     });
 
@@ -173,11 +153,12 @@ document.addEventListener('DOMContentLoaded', function() {
         activityInput.value = '';
         userName = '';
         
-        // Clear chat
-        chatBox.innerHTML = '';
+        // Clear result content
+        resultContent.textContent = '';
         
         // Reset to step 1
-        chatSection.classList.add('d-none');
+        loadingSection.classList.add('d-none');
+        resultSection.classList.add('d-none');
         step2.classList.add('d-none');
         step3.classList.add('d-none');
         

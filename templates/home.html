@@ -56,29 +56,29 @@
           </div>
         </div>
 
-        <!-- Chat Section (initially hidden) -->
-        <div id="chat-section" class="d-none container py-5">
+        <!-- Loading Section (initially hidden) -->
+        <div id="loading-section" class="d-none container-fluid min-vh-100 d-flex align-items-center justify-content-center">
+          <div class="text-center">
+            <div class="loading-spinner mb-4">
+              <div class="spinner"></div>
+            </div>
+            <h2 class="text-indigo mb-3">Processing your request...</h2>
+            <p class="text-muted" id="loading-message">Please wait while I work on this for you.</p>
+          </div>
+        </div>
+
+        <!-- Result Section (initially hidden) -->
+        <div id="result-section" class="d-none container py-5">
           <div class="row justify-content-center">
             <div class="col-lg-8">
               <div class="card shadow-sm">
                 <div class="card-header bg-indigo text-white">
-                  <h5 class="mb-0">Chat with WhatNowAI</h5>
+                  <h5 class="mb-0">Your Results</h5>
                   <button id="restart-btn" class="btn btn-sm btn-outline-light float-end">Start Over</button>
                 </div>
                 <div class="card-body">
-                  <!-- chat window -->
-                  <div id="chat-box" class="chat-box mb-3"></div>
-
-                  <!-- input group -->
-                  <div class="input-group">
-                    <input 
-                      type="text" 
-                      id="user-input" 
-                      class="form-control" 
-                      placeholder="Continue the conversation..." 
-                      autocomplete="off"
-                    >
-                    <button id="send-btn" class="btn btn-teal">Send</button>
+                  <div id="result-content" class="mb-3">
+                    <!-- Results will be displayed here -->
                   </div>
                 </div>
               </div>

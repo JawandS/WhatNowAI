@@ -21,14 +21,15 @@ def submit_info():
                 'message': 'Please provide both your name and what you want to do.'
             }), 400
         
-        # Process the user input (you can add your AI logic here)
-        response_message = f"Hello {name}! I understand you want to {activity}. Let me help you with that!"
+        # Process the user input - start background processing
+        response_message = f"Hello {name}! I'm processing your request to {activity}. Please wait while I work on this..."
         
         return jsonify({
             'success': True,
             'message': response_message,
             'name': name,
-            'activity': activity
+            'activity': activity,
+            'processing': True
         })
     
     except Exception as e:
@@ -62,6 +63,45 @@ def chat():
         return jsonify({
             'success': False,
             'message': 'An error occurred while processing your message.'
+        }), 500
+
+@app.route('/process', methods=['POST'])
+def process_request():
+    """Handle background processing of user request"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        activity = data.get('activity', '').strip()
+        
+        if not name or not activity:
+            return jsonify({
+                'success': False,
+                'message': 'Missing name or activity information.'
+            }), 400
+        
+        # TODO: Add your actual AI/processing logic here
+        # This is a placeholder for now - simulate processing time
+        import time
+        time.sleep(3)  # Simulate processing delay
+        
+        # Placeholder response - replace with actual AI logic
+        result = f"Great news, {name}! I've analyzed your request to {activity}. Here are some suggestions:\n\n" \
+                f"1. Start by breaking down '{activity}' into smaller steps\n" \
+                f"2. Set a timeline for completion\n" \
+                f"3. Gather any resources you might need\n\n" \
+                f"Would you like me to help you create a detailed plan?"
+        
+        return jsonify({
+            'success': True,
+            'result': result,
+            'name': name,
+            'activity': activity
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing your request.'
         }), 500
 
 if __name__ == '__main__':
