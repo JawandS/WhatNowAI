@@ -14,11 +14,12 @@ from typing import Dict, Any
 from services.tts_service import TTSService, get_introduction_text, INTRODUCTION_TEXTS
 from services.geocoding_service import GeocodingService
 from services.ticketmaster_service import TicketmasterService
+from services.allevents_service import AllEventsService
 from services.mapping_service import MappingService
 from services.user_profiling_service import EnhancedUserProfilingService
 from utils.helpers import validate_coordinates, generate_response_text
-from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, 
-                           TICKETMASTER_CONFIG, MAP_CONFIG)
+from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, ALLEVENTS_API_KEY,
+                           TICKETMASTER_CONFIG, ALLEVENTS_CONFIG, MAP_CONFIG)
 from searchmethods.background_search import UserProfile, perform_background_search
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ main_bp = Blueprint('main', __name__)
 tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
 geocoding_service = GeocodingService()
 ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CONFIG)
+allevents_service = AllEventsService(ALLEVENTS_API_KEY, ALLEVENTS_CONFIG)
 mapping_service = MappingService(MAP_CONFIG)
 user_profiling_service = EnhancedUserProfilingService()
 
@@ -459,6 +461,27 @@ def get_map_events():
                 
         except Exception as tm_error:
             logger.warning(f"Ticketmaster search failed: {tm_error}")
+        
+        # Get events from AllEvents with enhanced profiling
+        logger.info(f"Searching AllEvents events for location: {latitude}, {longitude}")
+        
+        try:
+            allevents_events = allevents_service.search_events(
+                location=location_data,
+                user_interests=user_interests,
+                user_activity=user_activity,
+                personalization_data=personalization_data,
+                user_profile=user_profile_for_ai  # Pass enhanced profile to AI ranking
+            )
+            
+            if allevents_events:
+                mapping_service.add_allevents_events(allevents_events)
+                logger.info(f"Added {len(allevents_events)} AllEvents events to map")
+            else:
+                logger.info("No AllEvents events found")
+                
+        except Exception as ae_error:
+            logger.warning(f"AllEvents search failed: {ae_error}")
         
         # TODO: Add other API integrations here
         # mapping_service.add_eventbrite_events(eventbrite_events)

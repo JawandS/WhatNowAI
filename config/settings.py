@@ -71,6 +71,7 @@ GEOCODING_CONFIG = {
 
 # API Keys from secrets.txt file and environment variables (env vars take precedence)
 TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY', _secrets.get('TICKETMASTER_CONSUMER_KEY', ''))
+ALLEVENTS_API_KEY = os.getenv('ALLEVENTS_API_KEY', _secrets.get('ALLEVENTS_API_KEY', ''))
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', _secrets.get('OPENAI_API_KEY', ''))
 
 # Optional API keys for advanced features
@@ -81,6 +82,7 @@ def check_api_keys():
     """Check which API keys are available"""
     keys_status = {
         'TICKETMASTER_API_KEY': 'SET' if TICKETMASTER_API_KEY else 'NOT SET',
+        'ALLEVENTS_API_KEY': 'SET' if ALLEVENTS_API_KEY else 'NOT SET',
         'OPENAI_API_KEY': 'SET' if OPENAI_API_KEY else 'NOT SET',
         'HUGGINGFACE_TOKEN': 'SET' if HUGGINGFACE_TOKEN else 'NOT SET'
     }
@@ -88,8 +90,8 @@ def check_api_keys():
     print("🔑 API Keys Status:")
     for key, status in keys_status.items():
         print(f"   {key}: {status}")
-        if status == 'SET' and key == 'TICKETMASTER_API_KEY':
-            print(f"   {key} value: {TICKETMASTER_API_KEY[:10]}...")
+        if status == 'SET' and key in ['TICKETMASTER_API_KEY', 'ALLEVENTS_API_KEY']:
+            print(f"   {key} value: {globals()[key][:10]}...")
     
     return keys_status
 
@@ -112,6 +114,15 @@ TICKETMASTER_CONFIG = {
     'SEARCH_RADIUS': 50,  # miles
     'MAX_EVENTS': 20,
     'DEFAULT_CATEGORIES': ['music', 'sports', 'arts', 'miscellaneous'],
+    'TIMEOUT': 10,
+    'MIN_RELEVANCE_SCORE': 0.15  # Minimum relevance score for event filtering
+}
+
+# AllEvents API configuration
+ALLEVENTS_CONFIG = {
+    'BASE_URL': 'https://allevents.developer.azure-api.net/api',
+    'SEARCH_RADIUS': 50,  # km
+    'MAX_EVENTS': 30,
     'TIMEOUT': 10,
     'MIN_RELEVANCE_SCORE': 0.15  # Minimum relevance score for event filtering
 }
