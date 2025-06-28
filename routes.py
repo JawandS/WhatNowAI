@@ -10,6 +10,7 @@ from services.tts_service import TTSService, get_introduction_text, INTRODUCTION
 from services.geocoding_service import GeocodingService
 from utils.helpers import validate_coordinates, generate_response_text
 from config.settings import AUDIO_DIR, DEFAULT_TTS_VOICE
+from searchmethods.background_search import UserProfile, perform_background_search
 
 logger = logging.getLogger(__name__)
 
@@ -150,19 +151,52 @@ def process_request():
                 'message': 'Missing name or activity information.'
             }), 400
         
-        # Simulate processing time
-        time.sleep(3)
+        # Perform background search
+        logger.info(f"Starting background search for user: {name}")
         
-        # Generate response text
-        result = generate_response_text(name, activity, location_data, social_data)
+        # Create user profile for search
+        user_profile = UserProfile(
+            name=name,
+            location=location_data.get('city', '') + ', ' + location_data.get('country', ''),
+            social_handles={
+                'twitter': social_data.get('twitter', ''),
+                'instagram': social_data.get('instagram', ''),
+                'github': social_data.get('github', ''),
+                'linkedin': social_data.get('linkedin', '')
+            },
+            activity=activity
+        )
         
+        # Perform background search (this may take some time)
+        search_results = None
+        search_summaries = None
+        
+        try:
+            search_data = perform_background_search(user_profile)
+            search_results = search_data.get('raw_results', {})
+            search_summaries = search_data.get('summaries', {})
+            logger.info(f"Background search completed. Found {search_data.get('total_results', 0)} total results")
+        except Exception as search_error:
+            logger.warning(f"Background search failed: {search_error}")
+            search_summaries = {
+                'general': 'Background search temporarily unavailable.',
+                'social': 'Social media search temporarily unavailable.',
+                'location': 'Location search temporarily unavailable.',
+                'activity': 'Activity search temporarily unavailable.'
+            }
+        
+        # Generate response text with search context
+        result = generate_response_text(name, activity, location_data, social_data, search_summaries)
+        print(f"search {search_summaries}")
         return jsonify({
             'success': True,
             'result': result,
             'name': name,
             'activity': activity,
             'location': location_data,
-            'social': social_data
+            'social': social_data,
+            'search_summaries': search_summaries,
+            'total_search_results': len(search_results) if search_results else 0
         })
     
     except Exception as e:

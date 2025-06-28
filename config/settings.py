@@ -47,3 +47,16 @@ GEOCODING_CONFIG = {
     'USER_AGENT': 'WhatNowAI/1.0',
     'TIMEOUT': 10
 }
+
+# API Keys from environment variables
+ASSEMBLY_AI_KEY = os.getenv('ASSEMBLY_AI_KEY', '')
+HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', '')
+
+# Search configuration
+SEARCH_CONFIG = {
+    'MAX_RESULTS_PER_SOURCE': 10,
+    'TIMEOUT': 30,
+    'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'SOCIAL_PLATFORMS': ['twitter', 'linkedin', 'instagram', 'facebook'],
+    'MAX_CONCURRENT_REQUESTS': 5
+}

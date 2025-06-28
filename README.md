@@ -1,13 +1,16 @@
 # WhatNowAI
 
-A Flask-based multi-step onboarding application that helps users determine their next steps based on their location, interests, and social media presence. Features include automatic location detection, social media integration, and text-to-speech for enhanced user experience.
+A Flask-based multi-step onboarding application that helps users determine their next steps based on their location, interests, and social media presence. Features include automatic location detection, social media integration, text-to-speech for enhanced user experience, and intelligent background research using web scraping.
 
 ## Features
 
 - **Multi-step Onboarding**: Smooth, animated progression through user information collection
 - **Text-to-Speech Integration**: EdgeTTS provides voice guidance during onboarding steps
+- **Voice Transcription**: AssemblyAI-powered voice input for activities
 - **Location Detection**: Automatic geolocation with reverse geocoding
-- **Social Media Integration**: Optional Twitter/X and Instagram handle collection
+- **Social Media Integration**: Optional Twitter/X, Instagram, GitHub, and LinkedIn handle collection
+- **Background Research**: Intelligent web scraping to gather relevant context about users and activities
+- **Privacy-focused Search**: Uses DuckDuckGo for user research while respecting privacy
 - **Responsive Design**: Modern, mobile-friendly interface
 - **Modular Architecture**: Clean separation of concerns with service-based design
 
@@ -23,10 +26,16 @@ WhatNowAI/
 ├── services/
 │   ├── __init__.py
 │   ├── tts_service.py        # Text-to-Speech service
+│   ├── voice_transcription.py # Voice input service
 │   └── geocoding_service.py  # Location services
 ├── utils/
 │   ├── __init__.py
 │   └── helpers.py            # Utility functions
+├── searchmethods/
+│   ├── __init__.py
+│   ├── background_search.py  # Web scraping and search service
+│   ├── README.md             # Search methods documentation
+│   └── test_search.py        # Test script for search functionality
 ├── templates/
 │   └── home.html             # Main template
 ├── static/
@@ -82,6 +91,22 @@ python app.py
 - Uses Microsoft EdgeTTS for natural voice synthesis
 - Audio plays automatically during onboarding steps
 - Temporary audio files are cleaned up automatically
+
+### Voice Transcription
+- AssemblyAI integration for speech-to-text
+- Real-time voice input for activity descriptions
+- WebRTC-based audio recording in the browser
+
+### Background Research
+- Intelligent web scraping using BeautifulSoup and requests
+- Privacy-focused search using DuckDuckGo
+- Multi-source data gathering:
+  - General web search for user information
+  - Social media profile analysis (GitHub, Twitter, LinkedIn)
+  - Location-specific events and activities
+  - Activity-related tutorials and resources
+- Smart result summarization for personalized recommendations
+- Rate limiting and error handling for responsible scraping
 
 ### Location Services
 - Browser-based geolocation API
