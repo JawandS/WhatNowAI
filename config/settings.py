@@ -54,9 +54,13 @@ HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN', '')
 
 # Search configuration
 SEARCH_CONFIG = {
-    'MAX_RESULTS_PER_SOURCE': 10,
-    'TIMEOUT': 30,
+    'MAX_RESULTS_PER_SOURCE': 3,  # Reduced for faster searches
+    'TIMEOUT': 5,  # Reduced timeout per request
     'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'SOCIAL_PLATFORMS': ['twitter', 'linkedin', 'instagram', 'facebook'],
-    'MAX_CONCURRENT_REQUESTS': 5
+    'SOCIAL_PLATFORMS': ['twitter', 'linkedin', 'instagram', 'github', 'tiktok', 'youtube'],
+    'MAX_CONCURRENT_REQUESTS': 3,  # Reduced for faster processing
+    'FOCUS_ON_USER': True,  # Only search for the specific user, not celebrities/general info
+    'LOCAL_ACTIVITY_SEARCH': True,  # Include local activity searches
+    'SEARCH_TIMEOUT': 10,  # Total search timeout in seconds
+    'SKIP_GENERAL_SEARCH': True  # Skip general name searches
 }

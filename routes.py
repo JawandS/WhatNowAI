@@ -162,7 +162,9 @@ def process_request():
                 'twitter': social_data.get('twitter', ''),
                 'instagram': social_data.get('instagram', ''),
                 'github': social_data.get('github', ''),
-                'linkedin': social_data.get('linkedin', '')
+                'linkedin': social_data.get('linkedin', ''),
+                'tiktok': social_data.get('tiktok', ''),
+                'youtube': social_data.get('youtube', '')
             },
             activity=activity
         )

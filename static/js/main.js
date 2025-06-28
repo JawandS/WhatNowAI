@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const activityInput = document.getElementById('user-activity');
     const twitterInput = document.getElementById('user-twitter');
     const instagramInput = document.getElementById('user-instagram');
+    const githubInput = document.getElementById('user-github');
+    const linkedinInput = document.getElementById('user-linkedin');
+    const tiktokInput = document.getElementById('user-tiktok');
+    const youtubeInput = document.getElementById('user-youtube');
     
     let userName = '';
     let userSocial = {};
@@ -101,7 +105,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Capture social media handles (optional)
         userSocial = {
             twitter: twitterInput.value.trim().replace('@', ''), // Remove @ if user added it
-            instagram: instagramInput.value.trim().replace('@', '') // Remove @ if user added it
+            instagram: instagramInput.value.trim().replace('@', ''), // Remove @ if user added it
+            github: githubInput.value.trim().replace('@', ''), // Remove @ if user added it
+            linkedin: linkedinInput.value.trim().replace('@', ''), // Remove @ if user added it
+            tiktok: tiktokInput.value.trim().replace('@', ''), // Remove @ if user added it
+            youtube: youtubeInput.value.trim().replace('@', '') // Remove @ if user added it
         };
         
         step2.classList.add('slide-left');

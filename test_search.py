@@ -28,7 +28,10 @@ def test_background_search():
         social_handles={
             "github": "octocat",  # Using a known GitHub user for testing
             "twitter": "github",
-            "linkedin": "github"
+            "linkedin": "github",
+            "instagram": "instagram",  # Test Instagram
+            "tiktok": "tiktok",       # Test TikTok
+            "youtube": "youtube"      # Test YouTube
         },
         activity="learn machine learning"
     )
