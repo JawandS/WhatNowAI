@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let userName = '';
     let userSocial = {};
     let userLocation = null;
-    let welcomePlayed = false;
 
     // TTS functionality
     async function playIntroductionTTS(step, locationData = null) {
@@ -68,24 +67,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to play welcome message (after user interaction)
     function playWelcomeIfNeeded() {
-        if (!welcomePlayed) {
-            welcomePlayed = true;
-            playIntroductionTTS('welcome');
-        }
+        // Welcome audio removed - this function is now empty but kept for compatibility
     }
-
-    // Play welcome message on page load
-    setTimeout(() => {
-        playIntroductionTTS('welcome');
-    }, 1000);
-
-    // Also try to play welcome on first user interaction (fallback)
-    document.body.addEventListener('click', playWelcomeIfNeeded, { once: true });
-    document.body.addEventListener('keydown', playWelcomeIfNeeded, { once: true });
 
     // Step 1 -> Step 2 transition
     nextBtn1.addEventListener('click', function() {
-        playWelcomeIfNeeded(); // Ensure welcome is played if autoplay was blocked
         step1.classList.add('slide-left');
         setTimeout(() => {
             step1.classList.add('d-none');

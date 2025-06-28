@@ -155,15 +155,13 @@ def get_introduction_text(step: str, location_data: Optional[Dict] = None) -> st
             location_context = f" from {country}"
     
     texts = {
-        "welcome": f"{greeting}! Welcome to What Now AI. Let's get started!",
-        
-        "step_name": f"First, I'd love to know your name! You can also share your social media handles.",
+        "step_name": f"Welcome to WhatNow AI! First, I'd love to know your name!",
         
         "step_activity": f"Perfect! Now tell me, what would you like to do today?",
         
         "step_location": f"Great choice! To give you the best local recommendations, I'll need to know where you are.",
         
-        "processing": f"Excellent! Now I'm creating your personalized plan - this will just take a moment."
+        "processing": f"Excellent! Now I'm creating your personalized recommendations. This will just take a moment."
     }
     
     return texts.get(step, "Let's continue!")
@@ -171,7 +169,6 @@ def get_introduction_text(step: str, location_data: Optional[Dict] = None) -> st
 
 # Backward compatibility - keep static texts as fallback
 INTRODUCTION_TEXTS = {
-    "welcome": "Good day! Welcome to What Now AI. Let's discover your next adventure!",
     "step_name": "First, what's your name? You can also share social media handles for better recommendations.",
     "step_activity": "Perfect! Now tell me, what would you like to do today?",
     "step_location": "Great! To give you local recommendations, I'll need your location. You can share it or skip this step.",
