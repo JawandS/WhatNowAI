@@ -10,22 +10,82 @@
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}">
 </head>
 <body>
-  <div class="container py-5 d-flex flex-column align-items-center">
-    <h1 class="mb-4 text-indigo">WhatNowAI</h1>
+  <div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="row w-100 justify-content-center">
+      <div class="col-lg-6 col-md-8">
+        
+        <!-- Step 1: Welcome Message -->
+        <div id="step-1" class="onboarding-step text-center">
+          <h1 class="display-3 mb-4 text-indigo fade-in">Ready for some fun?</h1>
+          <button id="next-btn-1" class="btn btn-indigo btn-lg px-5 fade-in-delay">
+            Next
+          </button>
+        </div>
 
-    <!-- chat window -->
-    <div id="chat-box" class="chat-box w-100 mb-3"></div>
+        <!-- Step 2: Name Input -->
+        <div id="step-2" class="onboarding-step text-center d-none">
+          <h1 class="display-3 mb-4 text-indigo">Name?</h1>
+          <div class="input-container">
+            <input 
+              type="text" 
+              id="user-name" 
+              class="form-control form-control-lg text-center border-0 border-bottom rounded-0 bg-transparent" 
+              placeholder="Enter your name..."
+              required
+            >
+            <button id="next-btn-2" class="btn btn-indigo btn-lg mt-4 px-5">
+              Enter
+            </button>
+          </div>
+        </div>
 
-    <!-- input group -->
-    <div class="input-group w-100" style="max-width: 600px;">
-      <input 
-        type="text" 
-        id="user-input" 
-        class="form-control" 
-        placeholder="Tell me how you're feeling or what you want..." 
-        autocomplete="off"
-      >
-      <button id="send-btn" class="btn btn-teal">Send</button>
+        <!-- Step 3: Activity Input -->
+        <div id="step-3" class="onboarding-step text-center d-none">
+          <h1 class="display-3 mb-4 text-indigo">What do you want to do?</h1>
+          <div class="input-container">
+            <textarea 
+              id="user-activity" 
+              class="form-control form-control-lg text-center border-0 border-bottom rounded-0 bg-transparent" 
+              rows="3"
+              placeholder="Tell me what you want to do..."
+              required
+            ></textarea>
+            <button id="start-btn" class="btn btn-indigo btn-lg mt-4 px-5">
+              Let's Go!
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Section (initially hidden) -->
+        <div id="chat-section" class="d-none container py-5">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <div class="card shadow-sm">
+                <div class="card-header bg-indigo text-white">
+                  <h5 class="mb-0">Chat with WhatNowAI</h5>
+                  <button id="restart-btn" class="btn btn-sm btn-outline-light float-end">Start Over</button>
+                </div>
+                <div class="card-body">
+                  <!-- chat window -->
+                  <div id="chat-box" class="chat-box mb-3"></div>
+
+                  <!-- input group -->
+                  <div class="input-group">
+                    <input 
+                      type="text" 
+                      id="user-input" 
+                      class="form-control" 
+                      placeholder="Continue the conversation..." 
+                      autocomplete="off"
+                    >
+                    <button id="send-btn" class="btn btn-teal">Send</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

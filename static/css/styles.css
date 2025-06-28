@@ -3,11 +3,134 @@ body {
   font-family: "Inter", sans-serif;
   background-color: #F8FAFC;    /* light neutral background */
   color: #1F2937;               /* dark gray text */
+  overflow-x: hidden;           /* Prevent horizontal scroll during animations */
 }
 
 h1 {
   font-weight: 600;
   color: #4F46E5;               /* indigo primary */
+}
+
+/* Onboarding animations */
+.onboarding-step {
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+}
+
+.onboarding-step.slide-left {
+  transform: translateX(-100vw);
+  opacity: 0;
+}
+
+.onboarding-step.slide-right {
+  transform: translateX(100vw);
+  opacity: 0;
+}
+
+.fade-in {
+  animation: fadeInUp 1s ease-out;
+}
+
+.fade-in-delay {
+  animation: fadeInUp 1s ease-out 0.5s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Special input styling for onboarding */
+.input-container .form-control {
+  font-size: 1.5rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  border-color: #4F46E5 !important;
+}
+
+.input-container .form-control:focus {
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+  border-color: #4F46E5 !important;
+  outline: none;
+}
+
+.input-container textarea.form-control {
+  resize: none;
+  min-height: 120px;
+}
+
+/* Utility classes */
+.text-indigo {
+  color: #4F46E5 !important;
+}
+
+.bg-indigo {
+  background-color: #4F46E5 !important;
+}
+
+.btn-indigo {
+  background-color: #4F46E5;
+  border-color: #4F46E5;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+}
+
+.btn-indigo:hover {
+  background-color: #4338CA;
+  border-color: #4338CA;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+.btn-teal {
+  background-color: #14B8A6;
+  border-color: #14B8A6;
+  color: white;
+  font-weight: 500;
+}
+
+.btn-teal:hover {
+  background-color: #0D9488;
+  border-color: #0D9488;
+  color: white;
+}
+
+/* Form styling */
+.card {
+  border: none;
+  border-radius: 1rem;
+}
+
+.form-control:focus {
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.form-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+/* Form validation styling */
+.form-control.is-invalid {
+  border-color: #dc3545 !important;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 /* Chat container */
@@ -101,5 +224,22 @@ mark,
 ::selection {
   background-color: rgba(79, 70, 229, 0.2); /* semi-transparent indigo */
   color: #4F46E5;                           /* indigo text */
+}
+
+/* Large display text */
+.display-3 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .display-3 {
+    font-size: 2.5rem;
+  }
+  
+  .input-container .form-control {
+    font-size: 1.25rem;
+  }
 }
 
