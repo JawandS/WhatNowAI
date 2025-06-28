@@ -1,5 +1,6 @@
 # Core web framework
 Flask
+gunicorn
 
 # API integrations
 openai
