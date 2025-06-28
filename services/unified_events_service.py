@@ -64,7 +64,7 @@ class UnifiedEventsService:
         self.final_event_limit = 30
         self.ai_confidence_threshold = 0.6
         
-    def search_unified_events(self, location: Dict[str, Any], user_interests: List[str] = None,
+    def search_events(self, location: Dict[str, Any], user_interests: List[str] = None,
                             user_activity: str = "", personalization_data: Dict[str, Any] = None,
                             user_profile: Any = None) -> Dict[str, Any]:
         """
@@ -155,15 +155,7 @@ class UnifiedEventsService:
         
         logger.info(f"Final events returned after AI evaluation: {len(final_events)}")
         
-        return {
-            'events': final_events,
-            'sources_used': sources_used,
-            'search_results': search_results,
-            'ai_insights': ai_results.get('insights', {}),
-            'total_found': len(all_events),
-            'total_returned': len(final_events),
-            'deduplication_saved': len(all_events) - len(deduplicated_events)
-        }
+        return final_events
     
     def _search_source_safely(self, source_name: str, service: Any, *args) -> List[Any]:
         """Safely search a single event source with error handling"""

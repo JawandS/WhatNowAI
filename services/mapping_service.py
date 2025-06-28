@@ -118,6 +118,29 @@ class MappingService:
                 source="allevents"
             )
             self.markers.append(marker)
+    
+    def add_unified_events(self, events: List[Any]):
+        """Add events from unified events to the map"""
+        for event in events:
+            marker = MapMarker(
+                id=f"ue_{event.id}",
+                name=event.name,
+                latitude=event.latitude,
+                longitude=event.longitude,
+                category=event.category,
+                subcategory=event.subcategory,
+                description=event.description,
+                url=event.url,
+                date=event.date,
+                time=event.time,
+                venue=event.venue,
+                address=event.address,
+                price_min=event.price_min,
+                price_max=event.price_max,
+                image_url=event.image_url,
+                source="unifiedevents"
+            )
+            self.markers.append(marker)
 
     def add_eventbrite_events(self, events: List[Dict[str, Any]]):
         """Add events from Eventbrite to the map (placeholder for future integration)"""

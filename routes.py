@@ -15,6 +15,7 @@ from services.tts_service import TTSService, get_introduction_text, INTRODUCTION
 from services.geocoding_service import GeocodingService
 from services.ticketmaster_service import TicketmasterService
 from services.allevents_service import AllEventsService
+from services.unified_events_service import UnifiedEventsService
 from services.mapping_service import MappingService
 from services.user_profiling_service import EnhancedUserProfilingService
 from utils.helpers import validate_coordinates, generate_response_text
@@ -32,6 +33,7 @@ tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
 geocoding_service = GeocodingService()
 ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CONFIG)
 allevents_service = AllEventsService(ALLEVENTS_API_KEY, ALLEVENTS_CONFIG)
+unified_events_service = UnifiedEventsService(ticketmaster_service, allevents_service)
 mapping_service = MappingService(MAP_CONFIG)
 user_profiling_service = EnhancedUserProfilingService()
 
@@ -445,7 +447,7 @@ def get_map_events():
             else:
                 logger.warning("No personalization data available - will use basic search only")
             
-            ticketmaster_events = ticketmaster_service.search_events(
+            unified_events = unified_events_service.search_events(
                 location=location_data,
                 user_interests=user_interests,
                 user_activity=user_activity,
@@ -453,35 +455,15 @@ def get_map_events():
                 user_profile=user_profile_for_ai  # Pass enhanced profile to AI ranking
             )
             
-            if ticketmaster_events:
-                mapping_service.add_ticketmaster_events(ticketmaster_events)
-                logger.info(f"Added {len(ticketmaster_events)} Ticketmaster events to map")
+            if unified_events:
+                mapping_service.add_unified_events(unified_events)
+                logger.info(f"Added {len(unified_events)} unified events to map")
             else:
-                logger.info("No Ticketmaster events found")
+                logger.info("No unified events found")
                 
         except Exception as tm_error:
-            logger.warning(f"Ticketmaster search failed: {tm_error}")
-        
-        # Get events from AllEvents with enhanced profiling
-        logger.info(f"Searching AllEvents events for location: {latitude}, {longitude}")
-        
-        try:
-            allevents_events = allevents_service.search_events(
-                location=location_data,
-                user_interests=user_interests,
-                user_activity=user_activity,
-                personalization_data=personalization_data,
-                user_profile=user_profile_for_ai  # Pass enhanced profile to AI ranking
-            )
+            logger.warning(f"Unified search failed: {ue_error}")
             
-            if allevents_events:
-                mapping_service.add_allevents_events(allevents_events)
-                logger.info(f"Added {len(allevents_events)} AllEvents events to map")
-            else:
-                logger.info("No AllEvents events found")
-                
-        except Exception as ae_error:
-            logger.warning(f"AllEvents search failed: {ae_error}")
         
         # TODO: Add other API integrations here
         # mapping_service.add_eventbrite_events(eventbrite_events)
