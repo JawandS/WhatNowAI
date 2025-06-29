@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form inputs
     const nameInput = document.getElementById('user-name');
     const activityInput = document.getElementById('user-activity');
+    const cityInput = document.getElementById('user-city');
+    const stateInput = document.getElementById('user-state');
     const twitterInput = document.getElementById('user-twitter');
     const instagramInput = document.getElementById('user-instagram');
     const githubInput = document.getElementById('user-github');
@@ -164,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             step3.classList.add('d-none');
             step4.classList.remove('d-none');
             step4.classList.add('fade-in');
+            cityInput.focus();
             
             // Play step location instructions
             setTimeout(() => {
@@ -180,121 +183,93 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Location handling
-    async function getCurrentLocation() {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Geolocation is not supported by this browser.'));
-                return;
+    // Location handling - City/State based
+    async function processLocation() {
+        const city = cityInput.value.trim();
+        const state = stateInput.value.trim();
+        
+        if (!city || !state) {
+            if (!city) {
+                cityInput.focus();
+                cityInput.classList.add('is-invalid');
+                setTimeout(() => cityInput.classList.remove('is-invalid'), 3000);
             }
+            if (!state) {
+                stateInput.focus(); 
+                stateInput.classList.add('is-invalid');
+                setTimeout(() => stateInput.classList.remove('is-invalid'), 3000);
+            }
+            return;
+        }
 
-            locationSpinner.classList.remove('d-none');
-            locationMessage.textContent = 'Getting your location...';
-            getLocationBtn.disabled = true;
+        locationSpinner.classList.remove('d-none');
+        locationMessage.classList.remove('d-none');
+        locationMessage.textContent = 'Processing your location...';
+        getLocationBtn.disabled = true;
 
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    try {
-                        const latitude = position.coords.latitude;
-                        const longitude = position.coords.longitude;
-                        
-                        locationMessage.textContent = 'Analyzing location...';
-                        
-                        // Reverse geocode the coordinates
-                        const response = await fetch('/geocode', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                latitude: latitude,
-                                longitude: longitude
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            userLocation = data.location;
-                            locationSpinner.classList.add('d-none');
-                            locationMessage.innerHTML = `
-                                <div class="text-success">
-                                    <i class="bi bi-check-circle"></i> 
-                                    Location found: ${userLocation.city}, ${userLocation.country}
-                                </div>
-                            `;
-                            
-                            // Auto-proceed to processing after a short delay
-                            setTimeout(() => {
-                                startProcessing();
-                            }, 1500);
-                            
-                        } else {
-                            throw new Error(data.message || 'Failed to get location details');
-                        }
-                        
-                    } catch (error) {
-                        console.error('Geocoding error:', error);
-                        useDefaultLocation();
-                    }
+        try {
+            // Forward geocode the city/state to get coordinates and location info
+            const response = await fetch('/geocode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    locationSpinner.classList.add('d-none');
-                    
-                    let errorMessage = 'Unable to get your location. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += 'Location access denied.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Location information unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += 'Location request timed out.';
-                            break;
-                        default:
-                            errorMessage += 'Unknown error occurred.';
-                            break;
-                    }
-                    
-                    locationMessage.innerHTML = `<div class="text-warning">${errorMessage}</div>`;
-                    getLocationBtn.disabled = false;
-                    getLocationBtn.textContent = 'Try Again';
-                }
-            );
-        });
+                body: JSON.stringify({
+                    city: city,
+                    state: state
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                userLocation = data.location;
+                locationSpinner.classList.add('d-none');
+                locationMessage.innerHTML = `
+                    <div class="text-success">
+                        <i class="bi bi-check-circle"></i> 
+                        Location found: ${userLocation.city}, ${userLocation.state || userLocation.country}
+                    </div>
+                `;
+                
+                // Auto-proceed to processing after a short delay
+                setTimeout(() => {
+                    startProcessing();
+                }, 1500);
+                
+            } else {
+                throw new Error(data.message || 'Failed to find location');
+            }
+            
+        } catch (error) {
+            console.error('Geocoding error:', error);
+            locationSpinner.classList.add('d-none');
+            locationMessage.innerHTML = `<div class="text-warning">Unable to find location. Please check your city and state and try again.</div>`;
+            getLocationBtn.disabled = false;
+        }
     }
 
-    function useDefaultLocation() {
-        userLocation = {
-            country: 'Global',
-            city: 'Unknown',
-            zipcode: 'Unknown',
-            latitude: null,
-            longitude: null,
-            full_address: 'Default location'
-        };
-        
-        locationSpinner.classList.add('d-none');
-        locationMessage.innerHTML = `
-            <div class="text-info">
-                Using default location settings
-            </div>
-        `;
-        
-        setTimeout(() => {
-            startProcessing();
-        }, 1000);
-    }
+    // Handle Enter key in city/state inputs
+    cityInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            stateInput.focus();
+        }
+    });
+    
+    stateInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            processLocation();
+        }
+    });
 
-    // Event listeners for location buttons
-    getLocationBtn.addEventListener('click', getCurrentLocation);
+
+    // Event listeners for location button
+    getLocationBtn.addEventListener('click', processLocation);
 
     // Step 4 -> Processing flow
     async function startProcessing() {
         if (!userLocation) {
-            useDefaultLocation();
+            locationMessage.innerHTML = `<div class="text-warning">Please enter your city and state first.</div>`;
             return;
         }
 
@@ -397,6 +372,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset all inputs and variables
         nameInput.value = '';
         activityInput.value = '';
+        cityInput.value = '';
+        stateInput.value = '';
         twitterInput.value = '';
         instagramInput.value = '';
         userName = '';
@@ -405,9 +382,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Reset location UI
         locationSpinner.classList.add('d-none');
-        locationMessage.textContent = 'Click below to share your location';
+        locationMessage.classList.add('d-none');
+        locationMessage.textContent = '';
         getLocationBtn.disabled = false;
-        getLocationBtn.textContent = 'Share Location';
+        getLocationBtn.textContent = 'Continue';
         
         // Clear result content
         resultContent.textContent = '';

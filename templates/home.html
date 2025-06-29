@@ -145,19 +145,39 @@
           </div>
         </div>
 
-        <!-- Step 4: Location Permission -->
+        <!-- Step 4: Location Input -->
         <div id="step-4" class="onboarding-step text-center d-none">
-          <h1 class="display-3 mb-4 text-indigo">Share your location?</h1>
+          <h1 class="display-3 mb-4 text-indigo">Where are you located?</h1>
           <div class="input-container">
             <p class="lead text-muted mb-4">We'll use your location to provide personalized recommendations</p>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <input 
+                  type="text" 
+                  id="user-city" 
+                  class="form-control form-control-lg text-center border-0 border-bottom rounded-0 bg-transparent" 
+                  placeholder="Enter your city..."
+                  required
+                >
+              </div>
+              <div class="col-md-6">
+                <input 
+                  type="text" 
+                  id="user-state" 
+                  class="form-control form-control-lg text-center border-0 border-bottom rounded-0 bg-transparent" 
+                  placeholder="Enter your state..."
+                  required
+                >
+              </div>
+            </div>
             <div id="location-status" class="mb-4">
               <div class="spinner-border text-indigo d-none" role="status" id="location-spinner">
-                <span class="visually-hidden">Getting location...</span>
+                <span class="visually-hidden">Processing location...</span>
               </div>
-              <p id="location-message" class="text-muted">Click below to share your location</p>
+              <p id="location-message" class="text-muted d-none"></p>
             </div>
             <button id="get-location-btn" class="btn btn-indigo btn-lg px-5 mb-3">
-              Share Location
+              Continue
             </button>
             <div class="mt-3">
               <small class="text-muted">Location is required to find events near you</small>

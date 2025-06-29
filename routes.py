@@ -143,9 +143,15 @@ def process_request():
         logger.info(f"Starting enhanced background search for user: {name}")
         
         # Create user profile for enhanced search
+        location_string = location_data.get('city', '')
+        if location_data.get('state'):
+            location_string += ', ' + location_data.get('state', '')
+        if location_data.get('country'):
+            location_string += ', ' + location_data.get('country', '')
+        
         user_profile = UserProfile(
             name=name,
-            location=location_data.get('city', '') + ', ' + location_data.get('country', ''),
+            location=location_string,
             social_handles={
                 'twitter': social_data.get('twitter', ''),
                 'instagram': social_data.get('instagram', ''),
@@ -225,51 +231,94 @@ def process_request():
 
 
 @main_bp.route('/geocode', methods=['POST'])
-def reverse_geocode():
-    """Reverse geocode latitude/longitude to get address information"""
+def geocode():
+    """Handle both forward and reverse geocoding based on input parameters"""
     try:
         data = request.get_json()
-        latitude = data.get('latitude')
-        longitude = data.get('longitude')
         
-        # Try to convert to float if they're strings
-        try:
-            if latitude is not None:
-                latitude = float(latitude)
-            if longitude is not None:
-                longitude = float(longitude)
-        except (ValueError, TypeError) as e:
-            logger.error(f"Failed to convert coordinates to float in geocode: {e}")
-            return jsonify({
-                'success': False,
-                'message': 'Invalid coordinate format. Coordinates must be numbers.'
-            }), 400
+        # Check if it's reverse geocoding (latitude/longitude provided)
+        if 'latitude' in data and 'longitude' in data:
+            return reverse_geocode_coordinates(data)
         
-        if not validate_coordinates(latitude, longitude):
-            return jsonify({
-                'success': False,
-                'message': 'Invalid latitude or longitude coordinates.'
-            }), 400
+        # Check if it's forward geocoding (city/state provided)
+        elif 'city' in data and 'state' in data:
+            return forward_geocode_city_state(data)
         
-        location_info = geocoding_service.reverse_geocode(latitude, longitude)
-        
-        if location_info:
-            return jsonify({
-                'success': True,
-                'location': location_info
-            })
         else:
             return jsonify({
                 'success': False,
-                'message': 'Failed to geocode location.'
-            }), 500
+                'message': 'Invalid request. Provide either (latitude, longitude) or (city, state).'
+            }), 400
             
     except Exception as e:
-        logger.error(f"Error in reverse_geocode: {e}")
+        logger.error(f"Error in geocode endpoint: {e}")
         return jsonify({
             'success': False,
             'message': 'An error occurred while processing location.'
         }), 500
+
+
+def reverse_geocode_coordinates(data):
+    """Reverse geocode latitude/longitude to get address information"""
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    
+    # Try to convert to float if they're strings
+    try:
+        if latitude is not None:
+            latitude = float(latitude)
+        if longitude is not None:
+            longitude = float(longitude)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Failed to convert coordinates to float in geocode: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Invalid coordinate format. Coordinates must be numbers.'
+        }), 400
+    
+    if not validate_coordinates(latitude, longitude):
+        return jsonify({
+            'success': False,
+            'message': 'Invalid latitude or longitude coordinates.'
+        }), 400
+    
+    location_info = geocoding_service.reverse_geocode(latitude, longitude)
+    
+    if location_info:
+        return jsonify({
+            'success': True,
+            'location': location_info
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to geocode location.'
+        }), 500
+
+
+def forward_geocode_city_state(data):
+    """Forward geocode city/state to get coordinates and address information"""
+    city = data.get('city', '').strip()
+    state = data.get('state', '').strip()
+    
+    if not city or not state:
+        return jsonify({
+            'success': False,
+            'message': 'Both city and state are required.'
+        }), 400
+    
+    location_info = geocoding_service.forward_geocode(city, state)
+    
+    if location_info:
+        return jsonify({
+            'success': True,
+            'location': location_info
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': f'Unable to find location for {city}, {state}. Please check the spelling and try again.'
+        }), 404
 
 
 @main_bp.route('/audio/<audio_id>')
