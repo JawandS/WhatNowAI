@@ -10,9 +10,20 @@ from .background_search import (
     perform_background_search
 )
 
+from .enhanced_background_search import (
+    EnhancedBackgroundSearchService,
+    EnhancedUserProfile,
+    PersonalizationInsight,
+    perform_enhanced_background_search
+)
+
 __all__ = [
     'BackgroundSearchService',
     'UserProfile', 
     'SearchResult',
-    'perform_background_search'
+    'perform_background_search',
+    'EnhancedBackgroundSearchService',
+    'EnhancedUserProfile',
+    'PersonalizationInsight',
+    'perform_enhanced_background_search'
 ]
