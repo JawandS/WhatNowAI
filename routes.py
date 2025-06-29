@@ -17,7 +17,6 @@ from services.ticketmaster_service import TicketmasterService
 from services.allevents_service import AllEventsService
 from services.unified_events_service import UnifiedEventsService
 from services.mapping_service import MappingService
-from services.user_profiling_service import EnhancedUserProfilingService
 from utils.helpers import validate_coordinates, generate_response_text
 from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, ALLEVENTS_API_KEY,
                            TICKETMASTER_CONFIG, ALLEVENTS_CONFIG, MAP_CONFIG)
@@ -38,7 +37,6 @@ ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CO
 allevents_service = AllEventsService(ALLEVENTS_API_KEY, ALLEVENTS_CONFIG)
 unified_events_service = UnifiedEventsService(ticketmaster_service, allevents_service)
 mapping_service = MappingService(MAP_CONFIG)
-user_profiling_service = EnhancedUserProfilingService()
 
 
 @main_bp.route('/')
@@ -125,35 +123,6 @@ def submit_info():
         }), 500
 
 
-@main_bp.route('/chat', methods=['POST'])
-def chat():
-    """Handle chat messages"""
-    try:
-        data = request.get_json()
-        message = data.get('message', '').strip()
-        
-        if not message:
-            return jsonify({
-                'success': False,
-                'message': 'Please provide a message.'
-            }), 400
-        
-        # Simple response logic (you can enhance this with AI)
-        response = f"I received your message: '{message}'. How can I help you further?"
-        
-        return jsonify({
-            'success': True,
-            'response': response
-        })
-    
-    except Exception as e:
-        logger.error(f"Error in chat: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while processing your message.'
-        }), 500
-
-
 @main_bp.route('/process', methods=['POST'])
 def process_request():
     """Handle background processing of user request with enhanced personalization"""
@@ -215,29 +184,6 @@ def process_request():
         # Generate response text with search context
         result = generate_response_text(name, activity, location_data, social_data, search_summaries)
         
-        # Create enhanced user profile using the new profiling service
-        enhanced_user_profile = None
-        try:
-            enhanced_user_profile = user_profiling_service.create_enhanced_profile(
-                name=name,
-                location=location_data,
-                activity=activity,
-                social_data=social_data,
-                search_results={
-                    'search_results': enhanced_search_results,
-                    'search_summaries': search_summaries,
-                    'enhanced_personalization': personalization_data
-                }
-            )
-            logger.info(f"Enhanced user profile created with {enhanced_user_profile.profile_completion:.1f}% completion")
-            
-            # Get recommendation context for events
-            recommendation_context = user_profiling_service.get_recommendation_context(enhanced_user_profile)
-            
-        except Exception as profile_error:
-            logger.warning(f"Enhanced user profiling failed: {profile_error}")
-            recommendation_context = {}
-        
         # Prepare comprehensive personalization data for the map
         comprehensive_personalization_data = {
             'search_results': enhanced_search_results,
@@ -249,7 +195,6 @@ def process_request():
                 'location': location_data,
                 'social': social_data
             },
-            'enhanced_profile': recommendation_context,
             'activity': activity,
             'interests': personalization_data.get('interests', []) if personalization_data else [],
             'behavioral_patterns': personalization_data.get('behavioral_patterns', {}) if personalization_data else {},
@@ -265,7 +210,6 @@ def process_request():
             'social': social_data,
             'search_summaries': search_summaries,
             'personalization_data': comprehensive_personalization_data,
-            'enhanced_profile_completion': enhanced_user_profile.profile_completion if enhanced_user_profile else 0,
             'personalization_score': personalization_data.get('personalization_score', 0) if personalization_data else 0,
             'total_search_results': len(enhanced_search_results) if enhanced_search_results else 0,
             'redirect_to_map': True,

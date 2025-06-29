@@ -157,6 +157,13 @@ class EventsMap {
                 this.displayEvents();
                 this.displayCategoryFilters(data.category_stats || {});
                 this.addMarkersToMap();
+                
+                // Log personalization info
+                if (data.personalization_applied) {
+                    console.log(`✅ Personalization applied with ${data.personalization_score}% score`);
+                } else {
+                    console.log('⚠️ Basic event filtering applied (no personalization data)');
+                }
             } else {
                 this.showError(data.message || 'Failed to load events');
             }
@@ -304,9 +311,8 @@ class EventsMap {
         div.className = 'event-item';
         div.dataset.eventId = event.id;
         
-        const price = event.price_min ? 
-            `$${event.price_min}${event.price_max && event.price_max !== event.price_min ? ` - $${event.price_max}` : ''}` : 
-            'Free';
+        // Don't show price information as requested
+        const price = 'Free';
         
         div.innerHTML = `
             <div class="event-title">${event.name}</div>
@@ -449,9 +455,8 @@ class EventsMap {
     }
     
     createPopupContent(event) {
-        const price = event.price_min ? 
-            `$${event.price_min}${event.price_max && event.price_max !== event.price_min ? ` - $${event.price_max}` : ''}` : 
-            'Free';
+        // Don't show price information as requested
+        const price = 'Free';
         
         return `
             <div class="popup-content">
@@ -507,9 +512,8 @@ class EventsMap {
         // Populate modal content
         document.getElementById('event-title').textContent = event.name;
         
-        const price = event.price_min ? 
-            `<span class="event-price">$${event.price_min}${event.price_max && event.price_max !== event.price_min ? ` - $${event.price_max}` : ''}</span>` : 
-            '<span class="event-price">Free</span>';
+        // Don't show price information as requested
+        const price = '<span class="event-price">Free</span>';
         
         document.getElementById('event-details').innerHTML = `
             ${event.image_url ? `<img src="${event.image_url}" alt="${event.name}" class="event-image">` : ''}
@@ -540,6 +544,7 @@ class EventsMap {
                 </div>
             </div>
             ${event.description ? `<p><strong>Description:</strong> ${event.description}</p>` : ''}
+            ${event.recommendation_reason ? `<p><strong>Why this event:</strong> ${event.recommendation_reason}</p>` : ''}
         `;
         
         // Update event link

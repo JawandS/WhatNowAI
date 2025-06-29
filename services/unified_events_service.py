@@ -66,7 +66,7 @@ class UnifiedEventsService:
         
     def search_events(self, location: Dict[str, Any], user_interests: List[str] = None,
                             user_activity: str = "", personalization_data: Dict[str, Any] = None,
-                            user_profile: Any = None) -> Dict[str, Any]:
+                            user_profile: Any = None) -> List[Any]:
         """
         Search for events from all available sources, group them, and apply AI evaluation
         
@@ -78,12 +78,7 @@ class UnifiedEventsService:
             user_profile: Enhanced user profile from user_profiling_service
             
         Returns:
-            Dictionary containing:
-            - events: List of AI-evaluated and ranked events
-            - sources_used: List of sources that were queried
-            - ai_insights: AI analysis of user preferences and event matching
-            - total_found: Total events found before filtering
-            - total_returned: Number of events after AI filtering
+            List of AI-evaluated and ranked events
         """
         logger.info(f"Starting unified event search for location: {location}")
         logger.info(f"User activity: '{user_activity}', interests: {user_interests}")
@@ -213,9 +208,9 @@ class UnifiedEventsService:
         import re
         
         # Remove common prefixes/suffixes and normalize
-        name = re.sub(r'\\b(the|a|an)\\b', '', name, flags=re.IGNORECASE)
-        name = re.sub(r'[^a-z0-9\\s]', '', name)
-        name = re.sub(r'\\s+', ' ', name).strip()
+        name = re.sub(r'\b(the|a|an)\b', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'[^a-z0-9\s]', '', name)
+        name = re.sub(r'\s+', ' ', name).strip()
         
         return name
     
@@ -252,7 +247,7 @@ class UnifiedEventsService:
         
         # Prefer events from higher reliability sources
         event_id = getattr(event, 'id', '')
-        if 'ticketmaster' in event_id:
+        if 'ticketmaster' in event_id or hasattr(event, 'source') and 'ticketmaster' in str(getattr(event, 'source', '')):
             score += 0.5  # Ticketmaster bonus
         
         return score
@@ -292,7 +287,7 @@ class UnifiedEventsService:
             
             # Interest matching
             if user_profile:
-                interest_score = self._calculate_interest_match(event, user_profile)
+                interest_score = self._calculate_interest_match(event, user_profile, personalization_data)
                 score += interest_score * 0.3
                 factors['interest_match'] = interest_score
             
@@ -343,42 +338,54 @@ class UnifiedEventsService:
         except Exception:
             return 0.0
     
-    def _calculate_interest_match(self, event: Any, user_profile: Any) -> float:
+    def _calculate_interest_match(self, event: Any, user_profile: Any, personalization_data: Dict[str, Any]) -> float:
         """Calculate how well an event matches the user's interests"""
         try:
-            if not user_profile or not hasattr(user_profile, 'get'):
-                return 0.0
+            score = 0.0
             
-            interests = user_profile.get('interests', [])
-            if not interests:
-                return 0.0
-            
-            event_category = getattr(event, 'category', '').lower()
-            event_name = getattr(event, 'name', '').lower()
-            
-            matches = 0
-            for interest in interests[:10]:  # Check top 10 interests
-                if isinstance(interest, dict):
-                    interest_text = interest.get('category', '').lower()
-                    keywords = interest.get('keywords', [])
-                elif hasattr(interest, 'category'):
-                    interest_text = interest.category.lower()
-                    keywords = getattr(interest, 'keywords', [])
-                else:
-                    interest_text = str(interest).lower()
-                    keywords = []
+            # Check enhanced personalization data first
+            if personalization_data and personalization_data.get('enhanced_personalization'):
+                enhanced_data = personalization_data['enhanced_personalization']
+                interests = enhanced_data.get('interests', [])
                 
-                # Check category match
-                if interest_text in event_category or event_category in interest_text:
-                    matches += 1
+                event_category = getattr(event, 'category', '').lower()
+                event_name = getattr(event, 'name', '').lower()
+                event_description = getattr(event, 'description', '').lower()
+                event_text = f"{event_name} {event_description}"
                 
-                # Check keyword matches
-                for keyword in keywords[:5]:  # Check top 5 keywords
-                    if keyword.lower() in event_name:
-                        matches += 0.5
+                for interest in interests:
+                    interest_category = interest.get('category', '').lower()
+                    interest_keywords = interest.get('keywords', [])
+                    confidence = interest.get('confidence', 0)
+                    
+                    # Category match
+                    if interest_category == event_category or interest_category in event_category:
+                        score += confidence * 0.5
+                    
+                    # Keyword matches
+                    keyword_matches = sum(1 for keyword in interest_keywords if keyword.lower() in event_text)
+                    if keyword_matches > 0 and interest_keywords:
+                        score += (keyword_matches / len(interest_keywords)) * confidence * 0.3
             
-            return min(matches / len(interests), 1.0)
-        except Exception:
+            # Fallback to basic user profile
+            elif user_profile and hasattr(user_profile, 'get'):
+                interests = user_profile.get('interests', [])
+                event_category = getattr(event, 'category', '').lower()
+                
+                for interest in interests:
+                    if isinstance(interest, dict):
+                        interest_category = interest.get('category', '').lower()
+                    elif hasattr(interest, 'category'):
+                        interest_category = interest.category.lower()
+                    else:
+                        interest_category = str(interest).lower()
+                    
+                    if interest_category == event_category or interest_category in event_category:
+                        score += 0.4
+            
+            return min(score, 1.0)
+        except Exception as e:
+            logger.debug(f"Error calculating interest match: {e}")
             return 0.0
     
     def _calculate_time_relevance(self, event: Any) -> float:
