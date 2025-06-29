@@ -297,9 +297,6 @@ class UnifiedEventsService:
             # SECONDARY FACTOR: Enhanced interest matching (20% weight)
             if user_profile:
                 interest_score = self._calculate_interest_match(event, user_profile, personalization_data)
-<<<<<<< HEAD
-                score += interest_score * 0.2
-=======
                 score += interest_score * 0.3
                 factors['interest_match'] = interest_score
             
