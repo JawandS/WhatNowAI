@@ -341,41 +341,87 @@ class AllEventsService:
     
     def _apply_ai_filtering(self, events: List[Any], user_profile: Any, user_activity: str, 
                           personalization_data: Dict[str, Any]) -> List[Any]:
-        """Apply AI-powered filtering and ranking to events"""
+        """Apply prompt-focused filtering and ranking to events"""
         try:
-            # Import AI filtering from ticketmaster service for consistency
-            from services.ticketmaster_service import TicketmasterService
+            logger.info(f"Applying prompt-focused filtering to {len(events)} AllEvents")
             
-            # Create a temporary instance to use its AI filtering methods
-            # We'll use the same AI logic for consistency
-            temp_service = TicketmasterService("", {})
-            
-            if hasattr(temp_service, '_apply_ai_filtering_and_ranking'):
-                return temp_service._apply_ai_filtering_and_ranking(
-                    events, user_profile, user_activity, personalization_data
+            # Calculate relevance scores for each event
+            for event in events:
+                event.relevance_score = self._calculate_simple_relevance(
+                    event, user_profile, user_activity
                 )
-            else:
-                # Fallback: simple relevance scoring
-                for event in events:
-                    event.relevance_score = self._calculate_simple_relevance(
-                        event, user_profile, user_activity
-                    )
                 
-                # Sort by relevance score
-                events.sort(key=lambda x: getattr(x, 'relevance_score', 0), reverse=True)
+                # Add basic personalization factors
+                event.personalization_factors = {
+                    'prompt_match': self._calculate_prompt_match(event, user_activity) if user_activity else 0,
+                    'activity_match': self._calculate_prompt_match(event, user_activity) if user_activity else 0,  # For compatibility
+                    'has_image': bool(getattr(event, 'image_url', '')),
+                    'has_description': len(getattr(event, 'description', '')) > 50
+                }
                 
-                return events[:20]  # Return top 20 events
+                # Generate recommendation reason
+                event.recommendation_reason = self._generate_recommendation_reason(
+                    event, user_activity
+                )
+            
+            # Filter events with flexible threshold
+            min_relevance = 0.1
+            filtered_events = []
+            
+            for event in events:
+                prompt_score = event.personalization_factors.get('prompt_match', 0)
+                overall_score = event.relevance_score
+                
+                # Keep events with high prompt match OR good overall score
+                if prompt_score > 0.25 or overall_score >= min_relevance:
+                    filtered_events.append(event)
+            
+            # Sort by prompt match first, then overall score
+            filtered_events.sort(key=lambda x: (
+                x.personalization_factors.get('prompt_match', 0),
+                x.relevance_score
+            ), reverse=True)
+            
+            # Limit results
+            final_events = filtered_events[:20]
+            
+            logger.info(f"AllEvents prompt-focused filtering: {len(events)} -> {len(filtered_events)} -> {len(final_events)}")
+            
+            return final_events
                 
         except Exception as e:
-            logger.warning(f"AI filtering failed for AllEvents, using simple filtering: {e}")
-            return events[:20]  # Return first 20 events as fallback
+            logger.warning(f"AllEvents filtering failed, using simple fallback: {e}")
+            return events[:20]
+    
+    def _generate_recommendation_reason(self, event: Any, user_activity: str) -> str:
+        """Generate human-readable recommendation reason for AllEvents"""
+        try:
+            factors = getattr(event, 'personalization_factors', {})
+            prompt_score = factors.get('prompt_match', 0)
+            
+            if prompt_score > 0.6 and user_activity:
+                return f"Recommended because it closely matches your request for '{user_activity}'"
+            elif prompt_score > 0.3 and user_activity:
+                return f"Recommended because it relates to your interest in '{user_activity}'"
+            elif user_activity:
+                return f"Recommended as it may interest someone looking for '{user_activity}'"
+            else:
+                return "Recommended based on your location and general interests"
+                
+        except Exception:
+            return "Recommended based on your location"
     
     def _calculate_simple_relevance(self, event: Any, user_profile: Any, user_activity: str) -> float:
-        """Calculate simple relevance score for an event"""
-        score = 0.5  # Base score
+        """Calculate prompt-focused relevance score for an event"""
+        score = 0.1  # Lower base score to emphasize prompt matching
         
         try:
-            # Check if event category matches user interests
+            # PRIMARY: Activity/prompt matching (60% weight)
+            if user_activity:
+                prompt_score = self._calculate_prompt_match(event, user_activity)
+                score += prompt_score * 0.6
+            
+            # SECONDARY: Interest matching (25% weight)
             if user_profile and hasattr(user_profile, 'get'):
                 interests = user_profile.get('interests', [])
                 event_category = getattr(event, 'category', '').lower()
@@ -389,27 +435,53 @@ class AllEventsService:
                         interest_text = str(interest).lower()
                     
                     if interest_text in event_category or event_category in interest_text:
-                        score += 0.3
+                        score += 0.25
                         break
             
-            # Check if event name/description matches user activity
-            if user_activity:
-                event_text = f"{getattr(event, 'name', '')} {getattr(event, 'description', '')}".lower()
-                activity_words = user_activity.lower().split()
-                
-                for word in activity_words:
-                    if len(word) > 2 and word in event_text:
-                        score += 0.1
-            
-            # Prefer events with images
+            # QUALITY: Event completeness (15% weight)
+            # Prefer events with images and detailed descriptions
             if getattr(event, 'image_url', ''):
-                score += 0.1
+                score += 0.08
             
-            # Prefer events with detailed descriptions
             if len(getattr(event, 'description', '')) > 50:
-                score += 0.1
+                score += 0.07
                 
         except Exception as e:
             logger.warning(f"Error calculating relevance score: {e}")
         
         return min(score, 1.0)  # Cap at 1.0
+    
+    def _calculate_prompt_match(self, event: Any, user_activity: str) -> float:
+        """Calculate how well the event matches the user's activity prompt"""
+        try:
+            event_name = getattr(event, 'name', '').lower()
+            event_description = getattr(event, 'description', '').lower()
+            event_category = getattr(event, 'category', '').lower()
+            
+            event_text = f"{event_name} {event_description} {event_category}"
+            user_activity_lower = user_activity.lower()
+            
+            score = 0.0
+            
+            # Exact phrase matching
+            if user_activity_lower in event_text:
+                score += 0.5
+            
+            # Individual word matching
+            activity_words = [word for word in user_activity_lower.split() if len(word) > 2]
+            if activity_words:
+                matches = 0
+                for word in activity_words:
+                    if word in event_name:
+                        matches += 2  # Title matches are worth more
+                    elif word in event_category:
+                        matches += 1.5
+                    elif word in event_description:
+                        matches += 1
+                
+                score += min(matches / (len(activity_words) * 2), 0.4)
+            
+            return min(score, 1.0)
+            
+        except Exception:
+            return 0.0
