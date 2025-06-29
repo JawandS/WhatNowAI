@@ -108,17 +108,17 @@ class TicketmasterService:
                      user_activity: str = "", personalization_data: Dict[str, Any] = None,
                      user_profile: Any = None) -> List[Event]:
         """
-        Search for events near a location based on user interests and enhanced personalization
+        Search for events near a location based solely on user activity prompt
         
         Args:
             location: Dictionary with latitude, longitude, city, country
-            user_interests: List of user interest categories
-            user_activity: What the user wants to do
-            personalization_data: Enhanced personalization data from background search
-            user_profile: Enhanced user profile from user_profiling_service
+            user_interests: Ignored - no user profiling
+            user_activity: What the user wants to do (primary ranking factor)
+            personalization_data: Ignored - no personalization
+            user_profile: Ignored - no user profiling
             
         Returns:
-            List of Event objects filtered and ranked by AI and user preferences
+            List of Event objects ranked by prompt relevance only
         """
         if not self.api_key:
             logger.warning("Ticketmaster API key not provided")
@@ -143,21 +143,16 @@ class TicketmasterService:
             logger.warning("Location coordinates not provided or invalid for Ticketmaster")
             return []
         
-        logger.info(f"Searching Ticketmaster with AI-enhanced personalization: "
+        logger.info(f"Searching Ticketmaster with prompt-based ranking: "
                    f"location=({latitude},{longitude}), "
-                   f"basic_interests={user_interests}, "
-                   f"activity='{user_activity}', "
-                   f"has_personalization_data={bool(personalization_data)}, "
-                   f"has_profile={bool(user_profile)}")
+                   f"activity='{user_activity}'")
         
         events = []
         
-        # Determine categories to search based on user interests and enhanced personalization
-        categories_to_search = self._determine_search_categories(
-            user_interests, user_activity, user_profile, personalization_data
-        )
+        # Determine categories to search based only on user activity
+        categories_to_search = self._determine_search_categories_from_activity(user_activity)
         
-        logger.info(f"Determined search categories: {categories_to_search}")
+        logger.info(f"Determined search categories from activity: {categories_to_search}")
         
         # Search each category
         for category in categories_to_search:
@@ -172,64 +167,27 @@ class TicketmasterService:
                 logger.error(f"Error searching category {category}: {e}")
                 continue
         
-        logger.info(f"Total events found before AI filtering: {len(events)}")
+        logger.info(f"Total events found: {len(events)}")
         
-        # Apply AI-powered filtering and ranking
-        if user_profile and events:
-            events = self._apply_ai_filtering_and_ranking(events, user_profile, user_activity, personalization_data)
+        # Apply simple prompt-based ranking
+        if events:
+            events = self._apply_prompt_based_ranking(events, user_activity)
         
-        logger.info(f"Final events after AI filtering: {len(events)}")
+        logger.info(f"Final events after prompt ranking: {len(events)}")
         return events
     
-    def _determine_search_categories(self, user_interests: List[str], user_activity: str, 
-                                   user_profile: Any, personalization_data: Dict[str, Any]) -> List[str]:
-        """Determine which Ticketmaster categories to search based on enhanced user data"""
+    def _determine_search_categories_from_activity(self, user_activity: str) -> List[str]:
+        """Determine which Ticketmaster categories to search based only on user activity"""
         categories = set()
         
-        # Add categories based on basic user interests
-        if user_interests:
-            for interest in user_interests:
-                if interest in self.interest_category_mapping:
-                    categories.update(self.interest_category_mapping[interest])
-        
-        # Add categories based on activity keywords
+        # Add categories based on activity keywords only
         if user_activity:
             activity_lower = user_activity.lower()
             for interest, tm_categories in self.interest_category_mapping.items():
                 if interest in activity_lower:
                     categories.update(tm_categories)
         
-        # Add categories based on enhanced personalization data
-        if personalization_data and personalization_data.get('enhanced_personalization'):
-            enhanced_data = personalization_data['enhanced_personalization']
-            
-            # Extract from interests
-            for interest_data in enhanced_data.get('interests', []):
-                interest_category = interest_data.get('category', '')
-                if interest_category in self.interest_category_mapping:
-                    categories.update(self.interest_category_mapping[interest_category])
-            
-            # Extract from recommendation context
-            rec_context = enhanced_data.get('recommendation_context', {})
-            for primary_interest in rec_context.get('primary_interests', []):
-                if primary_interest in self.interest_category_mapping:
-                    categories.update(self.interest_category_mapping[primary_interest])
-        
-        # Add categories based on user profile
-        if user_profile and hasattr(user_profile, 'get'):
-            profile_interests = user_profile.get('interests', [])
-            for interest in profile_interests:
-                if isinstance(interest, dict):
-                    interest_category = interest.get('category', '')
-                elif hasattr(interest, 'category'):
-                    interest_category = interest.category
-                else:
-                    interest_category = str(interest)
-                
-                if interest_category in self.interest_category_mapping:
-                    categories.update(self.interest_category_mapping[interest_category])
-        
-        # Default categories if none found
+        # Default categories if none found - search broadly
         if not categories:
             categories = {'music', 'sports', 'arts', 'miscellaneous'}
         
@@ -375,26 +333,16 @@ class TicketmasterService:
             logger.error(f"Error parsing Ticketmaster event: {e}")
             return None
     
-    def _apply_ai_filtering_and_ranking(self, events: List[Event], user_profile: Any, 
-                                      user_activity: str, personalization_data: Dict[str, Any]) -> List[Event]:
-        """Apply AI-powered filtering and ranking to events"""
-        logger.info(f"Applying AI filtering to {len(events)} events")
+    def _apply_prompt_based_ranking(self, events: List[Event], user_activity: str) -> List[Event]:
+        """Apply prompt-based ranking to events"""
+        logger.info(f"Applying prompt-based ranking to {len(events)} events")
         
         try:
-            # Calculate relevance scores for each event
+            # Calculate relevance scores for each event based only on prompt
             for event in events:
-                event.relevance_score = self._calculate_ai_relevance_score(
-                    event, user_profile, user_activity, personalization_data
-                )
-                
-                # Generate personalization factors
-                event.personalization_factors = self._generate_personalization_factors(
-                    event, user_profile, user_activity, personalization_data
-                )
-                
-                # Generate recommendation reason
-                event.recommendation_reason = self._generate_recommendation_reason(
-                    event, user_profile, user_activity
+                event.relevance_score = self._calculate_prompt_relevance_score(event, user_activity)
+                event.recommendation_reason = self._generate_simple_recommendation_reason(
+                    event.relevance_score, user_activity
                 )
             
             # Filter out low-relevance events
@@ -408,49 +356,33 @@ class TicketmasterService:
             max_events = self.config.get('MAX_EVENTS', 20)
             final_events = filtered_events[:max_events]
             
-            logger.info(f"AI filtering complete: {len(events)} -> {len(filtered_events)} -> {len(final_events)}")
+            logger.info(f"Prompt ranking complete: {len(events)} -> {len(filtered_events)} -> {len(final_events)}")
             
             return final_events
             
         except Exception as e:
-            logger.error(f"AI filtering failed: {e}")
+            logger.error(f"Prompt ranking failed: {e}")
             # Fallback to simple sorting
             return sorted(events, key=lambda x: x.name)[:20]
     
-    def _calculate_ai_relevance_score(self, event: Event, user_profile: Any, 
-                                    user_activity: str, personalization_data: Dict[str, Any]) -> float:
-        """Calculate AI-powered relevance score for an event"""
-        score = 0.5  # Base score
+    def _calculate_prompt_relevance_score(self, event: Event, user_activity: str) -> float:
+        """Calculate relevance score based only on how well event matches user's prompt"""
+        if not user_activity:
+            return 0.5  # Neutral score if no activity specified
         
         try:
-            # Activity matching (30% weight)
+            # Only factor: How well the event matches the user's activity request
             activity_score = self._calculate_activity_match(event, user_activity)
-            score += activity_score * 0.3
             
-            # Interest matching (25% weight)
-            interest_score = self._calculate_interest_match(event, user_profile, personalization_data)
-            score += interest_score * 0.25
+            # Add a small quality bonus to prefer well-documented events
+            quality_bonus = self._calculate_quality_score(event) * 0.1
             
-            # Behavioral pattern matching (20% weight)
-            behavioral_score = self._calculate_behavioral_match(event, user_profile, personalization_data)
-            score += behavioral_score * 0.2
-            
-            # Time preference matching (10% weight)
-            time_score = self._calculate_time_preference_match(event, user_profile, personalization_data)
-            score += time_score * 0.1
-            
-            # Social context matching (10% weight)
-            social_score = self._calculate_social_context_match(event, user_profile, personalization_data)
-            score += social_score * 0.1
-            
-            # Quality indicators (5% weight)
-            quality_score = self._calculate_quality_score(event)
-            score += quality_score * 0.05
+            final_score = min(activity_score + quality_bonus, 1.0)
+            return final_score
             
         except Exception as e:
-            logger.warning(f"Error calculating relevance score: {e}")
-        
-        return min(score, 1.0)  # Cap at 1.0
+            logger.warning(f"Error calculating prompt relevance score: {e}")
+            return 0.5
     
     def _calculate_activity_match(self, event: Event, user_activity: str) -> float:
         """Calculate how well event matches user's stated activity"""
@@ -673,3 +605,16 @@ class TicketmasterService:
             return "recommended based on your location and general interests"
         
         return "Recommended because it " + " and ".join(reasons)
+    
+    def _generate_simple_recommendation_reason(self, relevance_score: float, user_activity: str) -> str:
+        """Generate simple recommendation reason based on relevance score and activity"""
+        if relevance_score >= 0.8:
+            return f"Highly recommended for your interest in '{user_activity}'"
+        elif relevance_score >= 0.6:
+            return f"Good match for your interest in '{user_activity}'"
+        elif relevance_score >= 0.4:
+            return f"Related to your interest in '{user_activity}'"
+        elif relevance_score >= 0.2:
+            return f"May interest you based on '{user_activity}'"
+        else:
+            return "Recommended based on your location and general preferences"

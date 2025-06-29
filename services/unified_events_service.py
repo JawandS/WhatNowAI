@@ -43,6 +43,16 @@ class UnifiedEventsService:
         self.allevents_service = allevents_service
         self.ai_service = ai_service
         
+        # Initialize OpenAI service if not provided
+        if self.ai_service is None:
+            try:
+                from .openai_service import OpenAIService
+                self.ai_service = OpenAIService()
+                logger.info("OpenAI service initialized for event ranking")
+            except Exception as e:
+                logger.warning(f"Could not initialize OpenAI service: {e}")
+                self.ai_service = None
+        
         # Define event sources with metadata
         self.event_sources = {
             'ticketmaster': EventSource(
@@ -256,18 +266,42 @@ class UnifiedEventsService:
                            user_activity: str, personalization_data: Dict[str, Any]) -> Dict[str, Any]:
         """Apply AI-powered evaluation and ranking to events"""
         try:
-            # If we have an AI service, use it for advanced evaluation
-            if self.ai_service:
-                return self._advanced_ai_evaluation(events, user_profile, user_activity, personalization_data)
+            # Use OpenAI for intelligent ranking if available
+            if self.ai_service and self.ai_service.is_available():
+                logger.info("Using OpenAI GPT-4o-mini for event ranking")
+                ranked_events = self.ai_service.rank_events_by_activity(events, user_activity, max_events=30)
+                
+                insights = {
+                    'method': 'openai_gpt4o_mini',
+                    'total_evaluated': len(events),
+                    'ai_service_used': True,
+                    'ranking_factors': ['ai_prompt_relevance', 'semantic_understanding']
+                }
+                
+                if ranked_events:
+                    avg_score = sum(getattr(e, 'relevance_score', 0) for e in ranked_events) / len(ranked_events)
+                    insights['avg_score'] = avg_score
+                    
+                    logger.info(f"OpenAI ranked {len(ranked_events)} events with avg score: {avg_score:.2f}")
+                    
+                    # Log top events for debugging
+                    logger.info(f"Top 3 events by OpenAI ranking:")
+                    for i, event in enumerate(ranked_events[:3]):
+                        score = getattr(event, 'relevance_score', 0)
+                        reason = getattr(event, 'recommendation_reason', 'No reason')
+                        logger.info(f"  {i+1}. {getattr(event, 'name', 'Unknown')} (score: {score:.2f}) - {reason}")
+                
+                return {
+                    'ranked_events': ranked_events,
+                    'insights': insights
+                }
             else:
                 # Fallback to rule-based evaluation
+                logger.info("OpenAI not available, using rule-based evaluation")
                 return self._rule_based_evaluation(events, user_profile, user_activity, personalization_data)
         except Exception as e:
             logger.error(f"AI evaluation failed, using fallback: {e}")
-            return {
-                'ranked_events': events,
-                'insights': {'error': str(e), 'method': 'fallback'}
-            }
+            return self._rule_based_evaluation(events, user_profile, user_activity, personalization_data)
     
     def _rule_based_evaluation(self, events: List[Any], user_profile: Any,
                              user_activity: str, personalization_data: Dict[str, Any]) -> Dict[str, Any]:

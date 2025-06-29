@@ -17,13 +17,12 @@ from services.ticketmaster_service import TicketmasterService
 from services.allevents_service import AllEventsService
 from services.unified_events_service import UnifiedEventsService
 from services.mapping_service import MappingService
-from utils.helpers import validate_coordinates, generate_response_text
+from services.openai_service import OpenAIService
+from utils.helpers import validate_coordinates
 from config.settings import (AUDIO_DIR, DEFAULT_TTS_VOICE, TICKETMASTER_API_KEY, ALLEVENTS_API_KEY,
                            TICKETMASTER_CONFIG, ALLEVENTS_CONFIG, MAP_CONFIG)
 
-# Import enhanced search
-from searchmethods.enhanced_background_search import perform_enhanced_background_search
-from searchmethods.background_search import UserProfile
+# User profiling and background search removed - ranking now based solely on user prompt
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,8 @@ tts_service = TTSService(str(AUDIO_DIR), DEFAULT_TTS_VOICE)
 geocoding_service = GeocodingService()
 ticketmaster_service = TicketmasterService(TICKETMASTER_API_KEY, TICKETMASTER_CONFIG)
 allevents_service = AllEventsService(ALLEVENTS_API_KEY, ALLEVENTS_CONFIG)
-unified_events_service = UnifiedEventsService(ticketmaster_service, allevents_service)
+openai_service = OpenAIService()  # Initialize OpenAI service
+unified_events_service = UnifiedEventsService(ticketmaster_service, allevents_service, openai_service)
 mapping_service = MappingService(MAP_CONFIG)
 
 
@@ -125,7 +125,7 @@ def submit_info():
 
 @main_bp.route('/process', methods=['POST'])
 def process_request():
-    """Handle background processing of user request with enhanced personalization"""
+    """Handle background processing of user request with simplified prompt-based approach"""
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -139,85 +139,15 @@ def process_request():
                 'message': 'Missing name or activity information.'
             }), 400
         
-        # Perform enhanced background search
-        logger.info(f"Starting enhanced background search for user: {name}")
-        
-        # Create user profile for enhanced search
-        location_string = location_data.get('city', '')
-        if location_data.get('state'):
-            location_string += ', ' + location_data.get('state', '')
-        if location_data.get('country'):
-            location_string += ', ' + location_data.get('country', '')
-        
-        user_profile = UserProfile(
-            name=name,
-            location=location_string,
-            social_handles={
-                'twitter': social_data.get('twitter', ''),
-                'instagram': social_data.get('instagram', ''),
-                'github': social_data.get('github', ''),
-                'linkedin': social_data.get('linkedin', ''),
-                'tiktok': social_data.get('tiktok', ''),
-                'youtube': social_data.get('youtube', '')
-            },
-            activity=activity
-        )
-        
-        # Perform enhanced background search
-        enhanced_search_results = None
-        search_summaries = None
-        personalization_data = None
-        
-        try:
-            enhanced_search_data = perform_enhanced_background_search(user_profile)
-            enhanced_search_results = enhanced_search_data.get('raw_results', {})
-            search_summaries = enhanced_search_data.get('summaries', {})
-            personalization_data = enhanced_search_data.get('enhanced_personalization', {})
-            
-            logger.info(f"Enhanced background search completed. "
-                       f"Personalization score: {enhanced_search_data.get('personalization_score', 0):.1f}%")
-            
-        except Exception as search_error:
-            logger.warning(f"Enhanced background search failed: {search_error}")
-            search_summaries = {
-                'general': 'Background search temporarily unavailable.',
-                'social': 'Social media search temporarily unavailable.',
-                'location': 'Location search temporarily unavailable.',
-                'activity': 'Activity search temporarily unavailable.'
-            }
-            personalization_data = {}
-        
-        # Generate response text with search context
-        result = generate_response_text(name, activity, location_data, social_data, search_summaries)
-        
-        # Prepare comprehensive personalization data for the map
-        comprehensive_personalization_data = {
-            'search_results': enhanced_search_results,
-            'search_summaries': search_summaries,
-            'enhanced_personalization': personalization_data,
-            'user_profile': {
-                'name': name,
-                'activity': activity,
-                'location': location_data,
-                'social': social_data
-            },
-            'activity': activity,
-            'interests': personalization_data.get('interests', []) if personalization_data else [],
-            'behavioral_patterns': personalization_data.get('behavioral_patterns', {}) if personalization_data else {},
-            'recommendation_context': personalization_data.get('recommendation_context', {}) if personalization_data else {}
-        }
-        
+        logger.info(f"Processing request for user: {name}, activity: {activity}")
+                
+        # Prepare minimal data for the map (no personalization)
         return jsonify({
             'success': True,
-            'result': result,
             'name': name,
             'activity': activity,
             'location': location_data,
             'social': social_data,
-            'search_summaries': search_summaries,
-            'personalization_data': comprehensive_personalization_data,
-            'personalization_score': personalization_data.get('personalization_score', 0) if personalization_data else 0,
-            'total_search_results': len(enhanced_search_results) if enhanced_search_results else 0,
             'redirect_to_map': True,
             'map_url': '/map'
         })
@@ -338,31 +268,32 @@ def serve_audio(audio_id: str):
 
 @main_bp.route('/map/events', methods=['POST'])
 def get_map_events():
-    """Get events and activities for map display with enhanced personalization"""
+    """Get events for map display - ranking based solely on user prompt"""
     try:
         data = request.get_json()
         location_data = data.get('location', {})
-        user_interests = data.get('interests', [])
-        user_activity = data.get('activity', '')
         personalization_data = data.get('personalization_data', {})
         
-        # Enhanced debug logging
-        logger.info(f"=== Enhanced Map Events Request ===")
-        logger.info(f"Location data: {location_data}")
-        logger.info(f"User interests: {user_interests}")
-        logger.info(f"User activity: '{user_activity}'")
-        logger.info(f"Personalization data keys: {list(personalization_data.keys()) if personalization_data else 'None'}")
+        # Extract user activity from the correct location - it's sent directly in the request
+        user_activity = data.get('activity', '')
         
-        # Extract enhanced personalization data
-        enhanced_personalization = personalization_data.get('enhanced_personalization', {})
-        recommendation_context = personalization_data.get('recommendation_context', {})
+        # Also check fallback locations if not found in the main request
+        if not user_activity:
+            user_activity = personalization_data.get('activity', '')
+            if not user_activity:
+                # Final fallback: check if it's nested under user_profile
+                user_profile = personalization_data.get('user_profile', {})
+                user_activity = user_profile.get('activity', '')
         
-        logger.info(f"Enhanced personalization available: {bool(enhanced_personalization)}")
-        logger.info(f"Recommendation context available: {bool(recommendation_context)}")
+        logger.info(f"Getting events for activity: '{user_activity}' at location: {location_data}")
+        logger.debug(f"Full request data keys: {list(data.keys())}")
+        logger.debug(f"Personalization_data: {personalization_data}")
         
-        if enhanced_personalization:
-            logger.info(f"Enhanced interests count: {len(enhanced_personalization.get('interests', []))}")
-            logger.info(f"Behavioral patterns: {list(enhanced_personalization.get('behavioral_patterns', {}).keys())}")
+        if not user_activity:
+            logger.warning(f"No user activity found. Request keys available: {list(data.keys())}")
+            logger.warning(f"Personalization_data keys: {list(personalization_data.keys())}")
+            if 'user_profile' in personalization_data:
+                logger.warning(f"user_profile keys: {list(personalization_data['user_profile'].keys())}")
         
         latitude = location_data.get('latitude')
         longitude = location_data.get('longitude')
@@ -390,77 +321,24 @@ def get_map_events():
         # Clear previous markers
         mapping_service.clear_markers()
         
-        # Create enhanced user profile for AI analysis
-        user_profile_for_ai = None
-        
-        if enhanced_personalization:
-            # Use enhanced personalization data
-            user_profile_for_ai = {
-                'name': enhanced_personalization.get('user_profile', {}).get('name', ''),
-                'location': location_data,
-                'primary_activity': user_activity,
-                'interests': enhanced_personalization.get('interests', []),
-                'behavioral_patterns': enhanced_personalization.get('behavioral_patterns', {}),
-                'activity_preferences': enhanced_personalization.get('activity_preferences', {}),
-                'social_context': enhanced_personalization.get('social_context', {}),
-                'location_insights': enhanced_personalization.get('location_insights', {}),
-                'recommendation_context': enhanced_personalization.get('recommendation_context', {}),
-                'completion_score': enhanced_personalization.get('personalization_score', 0)
-            }
-            logger.info(f"Using enhanced personalization profile with {user_profile_for_ai['completion_score']:.1f}% completion")
-            
-        elif recommendation_context:
-            # Fallback to recommendation context
-            user_profile_for_ai = recommendation_context
-            logger.info(f"Using recommendation context fallback")
-            
-        elif personalization_data.get('user_profile'):
-            # Fallback to basic profile data
-            basic_profile = personalization_data['user_profile']
-            user_profile_for_ai = {
-                'name': basic_profile.get('name', ''),
-                'location': basic_profile.get('location', {}),
-                'primary_activity': basic_profile.get('activity', user_activity),
-                'interests': [],
-                'preferences': {'activity_style': 'balanced'},
-                'behavioral_patterns': {},
-                'activity_context': {'intent': 'seeking'},
-                'completion_score': 25
-            }
-            logger.info(f"Using basic profile fallback for user: {basic_profile.get('name', 'Anonymous')}")
-            
-        else:
-            # Create minimal profile from just the activity
-            user_profile_for_ai = {
-                'name': 'Anonymous',
-                'location': location_data,
-                'primary_activity': user_activity,
-                'interests': [],
-                'preferences': {'activity_style': 'balanced'},
-                'behavioral_patterns': {},
-                'activity_context': {'intent': 'seeking'},
-                'completion_score': 10
-            }
-            logger.info(f"Created minimal profile from activity: '{user_activity}'")
-        
-        # Get events from unified service with enhanced personalization
+        # Get events from unified service with prompt-only ranking
         try:
             unified_events = unified_events_service.search_events(
                 location=location_data,
-                user_interests=user_interests,
+                user_interests=None,  # No user interests - only prompt-based ranking
                 user_activity=user_activity,
-                personalization_data=personalization_data,
-                user_profile=user_profile_for_ai
+                personalization_data=None,  # No personalization data
+                user_profile=None  # No user profile
             )
             
             if unified_events:
                 mapping_service.add_unified_events(unified_events)
-                logger.info(f"Added {len(unified_events)} unified events to map with enhanced personalization")
+                logger.info(f"Added {len(unified_events)} events to map based on prompt: '{user_activity}'")
             else:
-                logger.info("No unified events found")
+                logger.info("No events found")
                 
         except Exception as ue_error:
-            logger.warning(f"Unified search failed: {ue_error}")
+            logger.warning(f"Event search failed: {ue_error}")
         
         # Get map data
         map_data = mapping_service.get_map_data(latitude, longitude)
@@ -470,10 +348,15 @@ def get_map_events():
             'success': True,
             'map_data': map_data,
             'category_stats': category_stats,
-            'total_events': len(mapping_service.get_all_markers()),
-            'personalization_applied': bool(enhanced_personalization),
-            'personalization_score': enhanced_personalization.get('personalization_score', 0) if enhanced_personalization else 0
+            'total_events': len(mapping_service.get_all_markers())
         })
+        
+    except Exception as e:
+        logger.error(f"Error getting map events: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while loading events.'
+        }), 500
         
     except Exception as e:
         logger.error(f"Error getting map events: {e}")

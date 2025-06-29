@@ -12,6 +12,7 @@ class EventsMap {
     }
     
     init() {
+        this.hideMapContainer(); // Hide map until events are loaded
         this.initializeMap();
         this.bindEvents();
         this.loadEvents();
@@ -158,6 +159,9 @@ class EventsMap {
                 this.displayCategoryFilters(data.category_stats || {});
                 this.addMarkersToMap();
                 
+                // Show the map now that events are ready
+                this.showMapContainer();
+                
                 // Log personalization info
                 if (data.personalization_applied) {
                     console.log(`✅ Personalization applied with ${data.personalization_score}% score`);
@@ -166,11 +170,15 @@ class EventsMap {
                 }
             } else {
                 this.showError(data.message || 'Failed to load events');
+                // Show map even on error to allow manual interaction
+                this.showMapContainer();
             }
             
         } catch (error) {
             console.error('Error loading events:', error);
             this.showError('Failed to load events. Please try again.');
+            // Show map even on error to allow manual interaction
+            this.showMapContainer();
         } finally {
             loadingIndicator.style.display = 'none';
         }
@@ -636,12 +644,71 @@ class EventsMap {
     }
     
     refreshEvents() {
+        this.hideMapContainer(); // Hide map during refresh
         this.loadEvents();
     }
     
     showError(message) {
         // Simple error display - you can enhance this
         alert(message);
+    }
+    
+    hideMapContainer() {
+        const mapContainer = document.querySelector('.col-md-8.col-lg-9');
+        const mapElement = document.getElementById('map');
+        
+        if (mapContainer && mapElement) {
+            // Hide the map
+            mapElement.style.display = 'none';
+            
+            // Remove existing loading overlay if present
+            const existingOverlay = document.getElementById('map-loading-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Create loading overlay for map area
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'map-loading-overlay';
+            loadingOverlay.className = 'd-flex align-items-center justify-content-center h-100';
+            loadingOverlay.style.cssText = `
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 100vh;
+            `;
+            loadingOverlay.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-white mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading map...</span>
+                    </div>
+                    <h4 class="text-white mb-2">Preparing Your Event Map</h4>
+                    <p class="text-white-50">Finding events and preparing the map...</p>
+                </div>
+            `;
+            
+            mapContainer.appendChild(loadingOverlay);
+        }
+    }
+    
+    showMapContainer() {
+        const mapContainer = document.querySelector('.col-md-8.col-lg-9');
+        const mapElement = document.getElementById('map');
+        const loadingOverlay = document.getElementById('map-loading-overlay');
+        
+        if (mapContainer && mapElement && loadingOverlay) {
+            // Remove loading overlay
+            loadingOverlay.remove();
+            
+            // Show the map
+            mapElement.style.display = 'block';
+            
+            // Trigger map resize to ensure proper rendering
+            setTimeout(() => {
+                if (this.map) {
+                    this.map.invalidateSize();
+                }
+            }, 100);
+        }
     }
 }
 
